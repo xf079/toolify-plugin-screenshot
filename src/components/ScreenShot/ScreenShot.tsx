@@ -1,11 +1,22 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { Image, Layer, Rect, Stage, Text, Transformer } from 'react-konva';
+import { FC, useEffect, useMemo, useRef, useState } from 'react';
+import { Image, Layer, Rect, Stage, Transformer } from 'react-konva';
+import Konva from 'konva';
+import { Box } from 'konva/lib/shapes/Transformer';
 
 import BgImage from '../../assets/bg.jpg';
 import { ScreenShotTools } from '../ScreenShotTools';
-import Konva from 'konva';
 
-const ScreenShot = () => {
+export interface ScreenShotProps {
+  width: number;
+  height: number;
+  primaryColor?: string;
+}
+
+const ScreenShot: FC<ScreenShotProps> = ({
+  width,
+  height,
+  primaryColor = '#4096ff'
+}) => {
   const image = useRef(new window.Image());
   const isDrawing = useRef(false);
   const start = useRef({ x: 0, y: 0 });
@@ -22,21 +33,21 @@ const ScreenShot = () => {
     const shotY = shotRect.y || 0;
     const shotX = shotRect.x || 0;
 
-    const isFooter = (window.innerHeight - (shotY + shotH)) > 44;
+    const isFooter = height - (shotY + shotH) > 44;
     const isTop = shotY > 44;
     let toolsY = isFooter ? shotY + shotH : shotY - 44;
-    if(isFooter){
+    if (isFooter) {
       toolsY = shotY + shotH + 8;
-    }else if(isTop){
+    } else if (isTop) {
       toolsY = shotY - 44 - 8;
     }
 
-    const toolsX = shotW+shotX > 400 ? (shotX+shotW-400) : shotX;
+    const toolsX = shotW + shotX > 400 ? shotX + shotW - 400 : shotX;
 
     return {
-      y:toolsY,
+      y: toolsY,
       x: toolsX
-    }
+    };
   }, [shotRect]);
 
   const handleDragStart = (e: Konva.KonvaEventObject<MouseEvent>) => {
@@ -93,38 +104,85 @@ const ScreenShot = () => {
     return { x, y };
   };
 
-  const onTransform = (e: Konva.KonvaEventObject<MouseEvent>) => {
-    const node = shotRef.current;
-    if (node) {
-      const scaleX = node.scaleX();
-      const scaleY = node.scaleY();
-      console.log(scaleX, scaleY);
-      node.scaleX(1);
-      node.scaleY(1);
+  const onTransform = () => {
+    // const target = shotRef.current;
+    // if (target) {
+    //   const scaleX = target.scaleX();
+    //   const scaleY = target.scaleY();
+    //   const newWidth = target.width() * scaleX;
+    //   const newHeight = target.height() * scaleY;
+    //   const maxW = window.innerWidth;
+    //   const maxH = window.innerHeight;
+    //
+    //   // 检查是否超出舞台边界
+    //   if (target.x() + newWidth / 2 > maxW || target.x() - newWidth / 2 < 0 ||
+    //       target.y() + newHeight / 2 > maxH || target.y() - newHeight / 2 < 0) {
+    //     // 如果超出范围，恢复到上一状态
+    //     target.scaleX(scaleX / 2);
+    //     target.scaleY(scaleY / 2);
+    //   }
+    // }
+  };
 
-      let x = node.x();
-      let y = node.y();
-      const width = Math.max(5, node.width() * scaleX);
-      const height = Math.max(5, node.height() * scaleY);
-      const maxX = window.innerWidth - width;
-      const maxY = window.innerHeight - height;
-      if (x < 0) {
-        x = 0;
-      } else if (x > maxX) {
-        x = maxX;
-      }
-      if (y < 0) {
-        y = 0;
-      } else if (y > maxY) {
-        y = maxY;
-      }
-      setShotRect({
-        x: node.x(),
-        y: node.y(),
-        width: width,
-        height: height
-      });
+  const onRectTransformEnd = () => {
+    // const target = shotTrRef.current;
+    // if (target) {
+    //   const scaleX = target.scaleX();
+    //   const scaleY = target.scaleY();
+    //   const newX = target.x();
+    //   const newY = target.y();
+    //   const newWidth = target.width() * scaleX;
+    //   const newHeight = target.height() * scaleY;
+    //   target.scaleX(1)
+    //   target.scaleY(1)
+    //   setShotRect({
+    //     ...shotRect,
+    //     x: newX,
+    //     y: newY,
+    //     width: newWidth,
+    //     height: newHeight
+    //   });
+    // }
+    // const target = shotRef.current;
+    // if (target) {
+    //   const scaleX = target.scaleX();
+    //   const scaleY = target.scaleY();
+    //   const newWidth = target.width() * scaleX;
+    //   const newHeight = target.height() * scaleY;
+    //   const maxW = window.innerWidth;
+    //   const maxH = window.innerHeight;
+    //
+    //   // 检查是否超出舞台边界
+    //   if (target.x() + newWidth / 2 > maxW || target.x() - newWidth / 2 < 0 ||
+    //       target.y() + newHeight / 2 > maxH || target.y() - newHeight / 2 < 0) {
+    //     // 如果超出范围，恢复到上一状态
+    //     target.scaleX(scaleX / 2);
+    //     target.scaleY(scaleY / 2);
+    //   }
+    // }
+  };
+
+  const onTrBoundBoxFunc = (_oldBoundBox: Box, newBoundBox: Box) => {
+    const newX = Math.max(0, newBoundBox.x < 0 ? 0 : newBoundBox.x);
+    const newY = Math.max(0, newBoundBox.y < 0 ? 0 : newBoundBox.y);
+
+    if (Math.abs(newBoundBox.width) + newX > width) {
+      console.log('change width');
+      newBoundBox.width = width - newX;
     }
+    if (Math.abs(newBoundBox.height) + newY > height) {
+      console.log('change height');
+      newBoundBox.height = height - newY;
+    }
+    console.log({
+      x: newX,
+      y: newY
+    });
+    return {
+      ...newBoundBox,
+      x: newX,
+      y: newY
+    };
   };
 
   useEffect(() => {
@@ -138,27 +196,19 @@ const ScreenShot = () => {
     image.current.src = BgImage;
   }, []);
   return (
-    <div id='screenshot' style={{ position: 'relative',overflow:'hidden' }}>
+    <div id='screenshot' style={{ position: 'relative', overflow: 'hidden' }}>
       <Stage
-        width={window.innerWidth}
-        height={window.innerHeight}
+        width={width}
+        height={height}
         onMouseDown={handleDragStart}
         onMouseMove={handleDragMove}
         onMouseUp={handleDragEnd}
       >
         <Layer>
-          <Image
-            image={image.current}
-            width={window.innerWidth}
-            height={window.innerHeight}
-          />
+          <Image image={image.current} width={width} height={height} />
         </Layer>
         <Layer>
-          <Rect
-            width={window.innerWidth}
-            height={window.innerHeight}
-            fill='rgba(0,0,0,0.4)'
-          />
+          <Rect width={width} height={height} fill='rgba(0,0,0,0.4)' />
           {shotRect ? (
             <>
               <Rect
@@ -167,18 +217,24 @@ const ScreenShot = () => {
                 height={shotRect.height}
                 x={shotRect.x}
                 y={shotRect.y}
-                fill='rgba(0,0,0,0.6)'
+                fill='rgba(0,0,0,0.8)'
                 draggable
                 cornerRadius={20}
+                shadowBlur={100}
+                shadowColor='#000'
+                shadowEnabled={true}
                 onMouseEnter={() => {
                   document.body.style.cursor = 'grab';
                 }}
                 onMouseLeave={() => {
                   document.body.style.cursor = 'default';
                 }}
+                onMouseDown={() => {
+                  console.log('mouseDown');
+                }}
                 globalCompositeOperation='destination-out'
                 dragBoundFunc={onDragBoundFunc}
-                onTransform={onTransform}
+                onTransformEnd={onRectTransformEnd}
               />
               <Transformer
                 ref={shotTrRef}
@@ -186,12 +242,13 @@ const ScreenShot = () => {
                 rotateEnabled={false}
                 anchorSize={8}
                 anchorFill='#fff'
-                anchorStroke='#4096ff'
-                anchorCornerRadius={4}
-                borderStroke='#4096ff'
+                anchorStroke={primaryColor}
+                anchorCornerRadius={0}
+                borderStroke={primaryColor}
                 borderStrokeWidth={1}
                 centeredScaling={false}
                 keepRatio={false}
+                boundBoxFunc={onTrBoundBoxFunc}
                 enabledAnchors={[
                   'top-left',
                   'top-right',
@@ -203,29 +260,11 @@ const ScreenShot = () => {
                   'bottom-center'
                 ]}
               />
-              {/*<Rect*/}
-              {/*  width={shotRect.width ? shotRect.width + 2 : 0}*/}
-              {/*  height={shotRect.height ? shotRect.height + 2 : 0}*/}
-              {/*  stroke='#4096ff'*/}
-              {/*  strokeWidth={1}*/}
-              {/*  x={shotRect.x ? shotRect.x - 1 : 0}*/}
-              {/*  y={shotRect.y ? shotRect.y - 1 : 0}*/}
-              {/*  onMouseOver={() => {*/}
-              {/*    document.body.style.cursor = 'grab';*/}
-              {/*  }}*/}
-              {/*  onMouseOut={() => {*/}
-              {/*    document.body.style.cursor = 'default';*/}
-              {/*  }}*/}
-              {/*/>*/}
             </>
           ) : null}
-
-          <Text text='Try to drag a star' />
         </Layer>
       </Stage>
-      {isChange ? (
-        <ScreenShotTools x={toolsRect.x} y={toolsRect.y} />
-      ) : null}
+      {isChange ? <ScreenShotTools x={toolsRect.x} y={toolsRect.y} /> : null}
     </div>
   );
 };
