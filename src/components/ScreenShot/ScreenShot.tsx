@@ -1,10 +1,11 @@
 import { FC, useEffect, useMemo, useRef, useState } from 'react';
 import { Image, Layer, Rect, Stage, Transformer } from 'react-konva';
+import { useMemoizedFn } from 'ahooks';
 import Konva from 'konva';
 import { Box } from 'konva/lib/shapes/Transformer';
+import { ShotTools } from './ShotTools';
 
 import BgImage from '../../assets/bg.jpg';
-import { ScreenShotTools } from '../ScreenShotTools';
 
 export interface ScreenShotProps {
   width: number;
@@ -21,8 +22,10 @@ const ScreenShot: FC<ScreenShotProps> = ({
   const isDrawing = useRef(false);
   const start = useRef({ x: 0, y: 0 });
 
-  const [isChange, setIsChange] = useState(false);
+  const [isDragMove, setIsDragMove] = useState(false);
   const [shotRect, setShotRect] = useState<Konva.NodeConfig>();
+  const [currentAction, setCurrentAction] = useState<string>();
+
   const shotRef = useRef<Konva.Rect>(null);
   const shotTrRef = useRef<Konva.Transformer>(null);
 
@@ -42,14 +45,18 @@ const ScreenShot: FC<ScreenShotProps> = ({
       toolsY = shotY - 44 - 8;
     }
 
-    const toolsX = shotW + shotX > 400 ? shotX + shotW - 400 : shotX;
+    const toolsX = shotW + shotX > 458 ? shotX + shotW - 458 : shotX;
 
     return {
       y: toolsY,
       x: toolsX
     };
-  }, [shotRect]);
+  }, [height, shotRect]);
 
+  /**
+   * 开始绘制截图区域
+   * @param e
+   */
   const handleDragStart = (e: Konva.KonvaEventObject<MouseEvent>) => {
     if (shotRect) return;
     isDrawing.current = true;
@@ -62,6 +69,10 @@ const ScreenShot: FC<ScreenShotProps> = ({
     });
   };
 
+  /**
+   * 绘制截图区域
+   * @param e
+   */
   const handleDragMove = (e: Konva.KonvaEventObject<MouseEvent>) => {
     if (isDrawing.current) {
       const endX = e.evt.layerX;
@@ -77,18 +88,44 @@ const ScreenShot: FC<ScreenShotProps> = ({
     }
   };
 
+  /**
+   * 结束绘制截图区域
+   */
   const handleDragEnd = () => {
     isDrawing.current = false;
-    setIsChange(true);
+    setIsDragMove(true);
   };
 
-  const onDragBoundFunc = (pos: Konva.Vector2d) => {
+  /**
+   * 截图区域的鼠标拖动移动事件
+   * @param e 鼠标事件对象
+   */
+  const onRectDragMove = useMemoizedFn(() => {
+    if (isDragMove) {
+      setIsDragMove(false);
+    }
+  });
+
+  /**
+   * 截图区域的鼠标拖动结束事件
+   * @param e 鼠标事件对象
+   */
+  const onRectDragEnd = useMemoizedFn(() => {
+    if (!isDragMove) {
+      setIsDragMove(true);
+    }
+  });
+
+  /**
+   * 截图区域的拖动边界限制
+   */
+  const onRectDragBoundFunc = useMemoizedFn((pos: Konva.Vector2d) => {
     let x = pos.x;
     let y = pos.y;
     const shotW = shotRect?.width || 0;
     const shotH = shotRect?.height || 0;
-    const maxX = window.innerWidth - shotW;
-    const maxY = window.innerHeight - shotH;
+    const maxX = width - shotW;
+    const maxY = height - shotH;
     if (x < 0) {
       x = 0;
     } else if (x > maxX) {
@@ -102,88 +139,61 @@ const ScreenShot: FC<ScreenShotProps> = ({
 
     setShotRect((prev) => ({ ...prev, x, y }));
     return { x, y };
-  };
-
-  const onTransform = () => {
-    // const target = shotRef.current;
-    // if (target) {
-    //   const scaleX = target.scaleX();
-    //   const scaleY = target.scaleY();
-    //   const newWidth = target.width() * scaleX;
-    //   const newHeight = target.height() * scaleY;
-    //   const maxW = window.innerWidth;
-    //   const maxH = window.innerHeight;
-    //
-    //   // 检查是否超出舞台边界
-    //   if (target.x() + newWidth / 2 > maxW || target.x() - newWidth / 2 < 0 ||
-    //       target.y() + newHeight / 2 > maxH || target.y() - newHeight / 2 < 0) {
-    //     // 如果超出范围，恢复到上一状态
-    //     target.scaleX(scaleX / 2);
-    //     target.scaleY(scaleY / 2);
-    //   }
-    // }
-  };
+  });
 
   const onRectTransformEnd = () => {
-    // const target = shotTrRef.current;
-    // if (target) {
-    //   const scaleX = target.scaleX();
-    //   const scaleY = target.scaleY();
-    //   const newX = target.x();
-    //   const newY = target.y();
-    //   const newWidth = target.width() * scaleX;
-    //   const newHeight = target.height() * scaleY;
-    //   target.scaleX(1)
-    //   target.scaleY(1)
-    //   setShotRect({
-    //     ...shotRect,
-    //     x: newX,
-    //     y: newY,
-    //     width: newWidth,
-    //     height: newHeight
-    //   });
-    // }
-    // const target = shotRef.current;
-    // if (target) {
-    //   const scaleX = target.scaleX();
-    //   const scaleY = target.scaleY();
-    //   const newWidth = target.width() * scaleX;
-    //   const newHeight = target.height() * scaleY;
-    //   const maxW = window.innerWidth;
-    //   const maxH = window.innerHeight;
-    //
-    //   // 检查是否超出舞台边界
-    //   if (target.x() + newWidth / 2 > maxW || target.x() - newWidth / 2 < 0 ||
-    //       target.y() + newHeight / 2 > maxH || target.y() - newHeight / 2 < 0) {
-    //     // 如果超出范围，恢复到上一状态
-    //     target.scaleX(scaleX / 2);
-    //     target.scaleY(scaleY / 2);
-    //   }
-    // }
+    const target = shotRef.current;
+    if (target) {
+      const scaleX = Math.abs(target.scaleX());
+      const scaleY = Math.abs(target.scaleY());
+      target.scaleX(1);
+      target.scaleY(1);
+      setShotRect({
+        x: target.x(),
+        y: target.y(),
+        width: Math.max(5, target.width() * scaleX),
+        height: Math.max(5, target.height() * scaleY)
+      });
+    }
+    setIsDragMove(true);
   };
 
-  const onTrBoundBoxFunc = (_oldBoundBox: Box, newBoundBox: Box) => {
-    const newX = Math.max(0, newBoundBox.x < 0 ? 0 : newBoundBox.x);
-    const newY = Math.max(0, newBoundBox.y < 0 ? 0 : newBoundBox.y);
+  const onTrBoundBoxFunc = useMemoizedFn(
+    (_oldBoundBox: Box, newBoundBox: Box) => {
+      const newX = Number(newBoundBox.x.toFixed(0));
+      const newY = Number(newBoundBox.y.toFixed(0));
+      const maxX = Math.max(0, newBoundBox.x < 0 ? 0 : newX);
+      const maxY = Math.max(0, newBoundBox.y < 0 ? 0 : newY);
+      const rectX = shotRect?.x || 0;
+      const rectY = shotRect?.y || 0;
 
-    if (Math.abs(newBoundBox.width) + newX > width) {
-      console.log('change width');
-      newBoundBox.width = width - newX;
+      console.log(rectX, rectY);
+
+      const newW = Number(newBoundBox.width.toFixed(0));
+      const newH = Number(newBoundBox.height.toFixed(0));
+
+      if (maxX < rectX) {
+        newBoundBox.width = newW >= rectX ? rectX : newW;
+      } else {
+        newBoundBox.width = newW >= width - rectX ? width - rectX : newW;
+      }
+      if (maxY < rectY) {
+        newBoundBox.height = newH >= rectY ? rectY : newH;
+      } else {
+        newBoundBox.height = newH >= height - rectY ? height - rectY : newH;
+      }
+
+      return {
+        ...newBoundBox,
+        x: maxX,
+        y: maxY
+      };
     }
-    if (Math.abs(newBoundBox.height) + newY > height) {
-      console.log('change height');
-      newBoundBox.height = height - newY;
-    }
-    console.log({
-      x: newX,
-      y: newY
-    });
-    return {
-      ...newBoundBox,
-      x: newX,
-      y: newY
-    };
-  };
+  );
+
+  const onToolAction = (action: string) => {
+
+  }
 
   useEffect(() => {
     if (shotRect && shotRef.current && shotTrRef.current) {
@@ -195,8 +205,16 @@ const ScreenShot: FC<ScreenShotProps> = ({
   useEffect(() => {
     image.current.src = BgImage;
   }, []);
+
   return (
-    <div id='screenshot' style={{ position: 'relative', overflow: 'hidden' }}>
+    <div
+      id='screenshot'
+      style={{
+        position: 'relative',
+        overflow: 'hidden',
+        '--primary-color': primaryColor
+      }}
+    >
       <Stage
         width={width}
         height={height}
@@ -218,8 +236,8 @@ const ScreenShot: FC<ScreenShotProps> = ({
                 x={shotRect.x}
                 y={shotRect.y}
                 fill='rgba(0,0,0,0.8)'
-                draggable
-                cornerRadius={20}
+                draggable={!currentAction}
+                cornerRadius={[10, 10, 10, 10]}
                 shadowBlur={100}
                 shadowColor='#000'
                 shadowEnabled={true}
@@ -232,18 +250,24 @@ const ScreenShot: FC<ScreenShotProps> = ({
                 onMouseDown={() => {
                   console.log('mouseDown');
                 }}
+                onDragMove={onRectDragMove}
+                onDragEnd={onRectDragEnd}
+                dragBoundFunc={onRectDragBoundFunc}
                 globalCompositeOperation='destination-out'
-                dragBoundFunc={onDragBoundFunc}
+                onTransformStart={() => {
+                  setIsDragMove(false);
+                }}
                 onTransformEnd={onRectTransformEnd}
               />
               <Transformer
                 ref={shotTrRef}
                 resizeEnabled={true}
                 rotateEnabled={false}
-                anchorSize={8}
-                anchorFill='#fff'
+                anchorSize={6}
+                anchorFill={primaryColor}
                 anchorStroke={primaryColor}
                 anchorCornerRadius={0}
+                ignoreStroke={true}
                 borderStroke={primaryColor}
                 borderStrokeWidth={1}
                 centeredScaling={false}
@@ -264,7 +288,7 @@ const ScreenShot: FC<ScreenShotProps> = ({
           ) : null}
         </Layer>
       </Stage>
-      {isChange ? <ScreenShotTools x={toolsRect.x} y={toolsRect.y} /> : null}
+      {isDragMove ? <ShotTools x={toolsRect.x} y={toolsRect.y} onAction={setCurrentAction} /> : null}
     </div>
   );
 };
