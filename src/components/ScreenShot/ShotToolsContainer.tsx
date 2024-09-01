@@ -1,9 +1,4 @@
-import {
-  FC,
-  FunctionComponent,
-  SVGProps,
-  useState
-} from 'react';
+import { FC, FunctionComponent, SVGProps, useState } from 'react';
 
 import RectIcon from './icon/rect-icon.svg?react';
 import LineIcon from './icon/line-icon.svg?react';
@@ -17,6 +12,7 @@ import RefreshIcon from './icon/refresh-icon.svg?react';
 import CloseIcon from './icon/close-icon.svg?react';
 import DownloadIcon from './icon/download-icon.svg?react';
 import SuccessIcon from './icon/success-icon.svg?react';
+import { Tooltip } from 'antd';
 
 export interface ScreenShotToolsProps {
   x: number;
@@ -28,6 +24,7 @@ export interface ToolsItem {
   name: string;
   icon: FunctionComponent<SVGProps<SVGSVGElement> & { title?: string }>;
   title?: string;
+  isSelect?: boolean;
   width: number;
   height: number;
 }
@@ -36,86 +33,96 @@ const tools: ToolsItem[] = [
   {
     name: 'Rect',
     icon: RectIcon,
-    title: 'rectangle tool',
-    width:20,
-    height:20
+    title: '矩形工具',
+    isSelect: true,
+    width: 20,
+    height: 20
   },
   {
     name: 'Circle',
     icon: CircleIcon,
-    width:20,
-    height:20
+    title: '圆形工具',
+    isSelect: true,
+    width: 20,
+    height: 20
   },
 
   {
     name: 'Line',
     icon: LineIcon,
-    width:16,
-    height:16
+    title: '直线工具',
+    isSelect: true,
+    width: 16,
+    height: 16
   },
   {
     name: 'Arrow',
     icon: ArrowTopRightIcon,
-    width:20,
-    height:20
+    title: '箭头工具',
+    isSelect: true,
+    width: 20,
+    height: 20
   },
   {
     name: 'Pencil',
     icon: EditIcon,
-    width:16,
-    height:16
+    title: '铅笔工具',
+    isSelect: true,
+    width: 16,
+    height: 16
   },
   {
     name: 'Mosaic',
     icon: MosaicIcon,
-    width:16,
-    height:16
+    title: '马赛克工具',
+    isSelect: true,
+    width: 16,
+    height: 16
   },
   {
     name: 'Text',
     icon: TextIcon,
-    width:18,
-    height:18
+    title: '文本工具',
+    isSelect: true,
+    width: 18,
+    height: 18
   },
   {
     name: 'Pinned',
     icon: PinnedIcon,
-    width:16,
-    height:16
+    width: 16,
+    height: 16
   },
   {
     name: 'Refresh',
     icon: RefreshIcon,
-    width:20,
-    height:20
+    width: 20,
+    height: 20
   },
   {
     name: 'Close',
     icon: CloseIcon,
-    width:20,
-    height:20
+    width: 20,
+    height: 20
   },
   {
     name: 'Download',
     icon: DownloadIcon,
-    width:18,
-    height:18
+    width: 18,
+    height: 18
   },
   {
     name: 'Success',
     icon: SuccessIcon,
-    width:20,
-    height:20
+    width: 20,
+    height: 20
   }
 ];
 
-export const ShotTools: FC<ScreenShotToolsProps> = (props) => {
+export const ShotToolsContainer: FC<ScreenShotToolsProps> = (props) => {
   const [currentTool, setCurrentTool] = useState<ToolsItem>();
   const onItemClick = (item: ToolsItem) => {
-    console.log(item);
-    if (currentTool === item) {
-      setCurrentTool(undefined);
-    } else {
+    if (item.isSelect) {
       setCurrentTool(item);
     }
     props.onAction(item.name);
@@ -126,16 +133,17 @@ export const ShotTools: FC<ScreenShotToolsProps> = (props) => {
       style={{ left: `${props.x}px`, top: `${props.y}px` }}
     >
       <div className='container'>
-        {tools.map((tool, index) => {
+        {tools.map((tool) => {
           const IconComp = tool.icon;
           return (
-            <div
-              className={`btn-item ${currentTool === tool ? 'active' : ''}`}
-              key={tool.name}
-              onClick={() => onItemClick(tool)}
-            >
-              <IconComp width={tool.width} height={tool.height} />
-            </div>
+            <Tooltip title={tool.title} key={tool.name}>
+              <div
+                className={`btn-item ${currentTool === tool ? 'active' : ''}`}
+                onClick={() => onItemClick(tool)}
+              >
+                <IconComp width={tool.width} height={tool.height} />
+              </div>
+            </Tooltip>
           );
         })}
       </div>

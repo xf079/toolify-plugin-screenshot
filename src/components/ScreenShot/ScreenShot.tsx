@@ -1,11 +1,26 @@
 import { FC, useEffect, useMemo, useRef, useState } from 'react';
-import { Image, Layer, Rect, Stage, Transformer } from 'react-konva';
+import {
+  Image,
+  Layer,
+  Line,
+  Rect,
+  Stage,
+  Text,
+  Transformer
+} from 'react-konva';
 import { useMemoizedFn } from 'ahooks';
 import Konva from 'konva';
 import { Box } from 'konva/lib/shapes/Transformer';
-import { ShotTools } from './ShotTools';
+import { ShotToolsContainer } from './ShotToolsContainer';
 
 import BgImage from '../../assets/bg.jpg';
+import {
+  SHOT_MIN_SIZE,
+  THUMBNAIL_IMAGE_SIZE,
+  THUMBNAIL_SIZE
+} from './constants';
+import { ShotRectContainer } from './ShotRectContainer.tsx';
+import { useActionHandle } from './hooks/useActionHanlde.tsx';
 
 export interface ScreenShotProps {
   width: number;
@@ -19,11 +34,27 @@ const ScreenShot: FC<ScreenShotProps> = ({
   primaryColor = '#4096ff'
 }) => {
   const image = useRef(new window.Image());
+  const mouseImageData = useRef(new window.Image());
+  // 是否开始绘制截图区域
   const isDrawing = useRef(false);
+  // 开始绘制截图区域的起点
   const start = useRef({ x: 0, y: 0 });
-
+  // 是否正在拖动截图区域
   const [isDragMove, setIsDragMove] = useState(false);
+  // 鼠标当前位置的颜色
+  const [atMouseColor, setAtMouseColor] = useState<string[]>();
+  const [atMouseImage, setAtMouseImage] = useState<ImageData>();
+  const [atMouseImageSrc, setAtMouseImageSrc] = useState<string>();
+  const [atMousePos, setAtMousePos] = useState<{ x: number; y: number }>();
+  // 截图区域
   const [shotRect, setShotRect] = useState<Konva.NodeConfig>();
+  // 区域圆角
+  const [shotRadius, setShotRadius] = useState(10);
+  // 是否显示阴影
+  const [showShadow, setShowShadow] = useState(false);
+  const [shadowBlur, setShadowBlur] = useState(10);
+
+  // 当前操作
   const [currentAction, setCurrentAction] = useState<string>();
 
   const shotRef = useRef<Konva.Rect>(null);
@@ -52,6 +83,12 @@ const ScreenShot: FC<ScreenShotProps> = ({
       x: toolsX
     };
   }, [height, shotRect]);
+
+  const { figures,onActionMouseDown, onActionMouseMove, onActionMouseUp } =
+    useActionHandle({
+      action: currentAction,
+      shotRect
+    });
 
   /**
    * 开始绘制截图区域
@@ -85,16 +122,60 @@ const ScreenShot: FC<ScreenShotProps> = ({
         width,
         height
       });
+    } else {
+      if (!shotRect) {
+        const stage = e.target.getStage();
+        if (!stage) return;
+        const pos = stage.getPointerPosition();
+        if (pos) {
+          const x = Number(pos.x.toFixed(0));
+          const y = Number(pos.y.toFixed(0));
+          // 使用 Konva 的方法获取颜色
+          const layer = stage.getLayers()[0];
+          const imageData = layer
+            .getContext()
+            .getImageData(x + 10, y + 10, 10, 10);
+          // mouseImageData.current.src = imageData.toDataURL();
+          setAtMouseImage(imageData);
+          setAtMousePos({ x, y });
+          // console.log(pixelData);
+        }
+      }
     }
   };
+
+  useEffect(() => {
+    if (atMouseImage) {
+      const canvas = document.createElement('canvas');
+      canvas.width = atMouseImage.width;
+      canvas.height = atMouseImage.height;
+      const ctx = canvas.getContext('2d');
+      ctx.putImageData(atMouseImage, 0, 0);
+      mouseImageData.current.src = canvas.toDataURL();
+      setAtMouseImageSrc(canvas.toDataURL());
+    }
+  }, [atMouseImage]);
 
   /**
    * 结束绘制截图区域
    */
-  const handleDragEnd = () => {
+  const handleDragEnd = useMemoizedFn(() => {
+    console.log('handleDragEnd');
+    if (!shotRect) return;
     isDrawing.current = false;
-    setIsDragMove(true);
-  };
+    if (
+      (shotRect.width || 0) < SHOT_MIN_SIZE ||
+      (shotRect.height || 10) < SHOT_MIN_SIZE
+    ) {
+      setShotRect(undefined);
+    } else {
+      /**
+       * 截图区域绘制完成
+       * 将截图区域设置为可拖动
+       */
+      setIsDragMove(true);
+    }
+  });
 
   /**
    * 截图区域的鼠标拖动移动事件
@@ -140,6 +221,25 @@ const ScreenShot: FC<ScreenShotProps> = ({
     setShotRect((prev) => ({ ...prev, x, y }));
     return { x, y };
   });
+
+  /**
+   *
+   */
+  const onRectTransformer = () => {
+    const target = shotRef.current;
+    if (target) {
+      const scaleX = Math.abs(target.scaleX());
+      const scaleY = Math.abs(target.scaleY());
+      target.scaleX(1);
+      target.scaleY(1);
+      setShotRect({
+        x: target.x(),
+        y: target.y(),
+        width: Math.max(5, target.width() * scaleX),
+        height: Math.max(5, target.height() * scaleY)
+      });
+    }
+  };
 
   const onRectTransformEnd = () => {
     const target = shotRef.current;
@@ -191,9 +291,7 @@ const ScreenShot: FC<ScreenShotProps> = ({
     }
   );
 
-  const onToolAction = (action: string) => {
-
-  }
+  const onToolAction = (action: string) => {};
 
   useEffect(() => {
     if (shotRect && shotRef.current && shotTrRef.current) {
@@ -206,15 +304,9 @@ const ScreenShot: FC<ScreenShotProps> = ({
     image.current.src = BgImage;
   }, []);
 
+  console.log(figures);
   return (
-    <div
-      id='screenshot'
-      style={{
-        position: 'relative',
-        overflow: 'hidden',
-        '--primary-color': primaryColor
-      }}
-    >
+    <div id='screenshot'>
       <Stage
         width={width}
         height={height}
@@ -226,7 +318,16 @@ const ScreenShot: FC<ScreenShotProps> = ({
           <Image image={image.current} width={width} height={height} />
         </Layer>
         <Layer>
-          <Rect width={width} height={height} fill='rgba(0,0,0,0.4)' />
+          <Rect
+            width={width}
+            height={height}
+            fill='rgba(0,0,0,0.5)'
+            onMouseLeave={() => {
+              if (!shotRect) {
+                // document.body.style.cursor = 'crosshair';
+              }
+            }}
+          />
           {shotRect ? (
             <>
               <Rect
@@ -235,21 +336,25 @@ const ScreenShot: FC<ScreenShotProps> = ({
                 height={shotRect.height}
                 x={shotRect.x}
                 y={shotRect.y}
-                fill='rgba(0,0,0,0.8)'
+                fill='rgba(0,0,0)'
                 draggable={!currentAction}
-                cornerRadius={[10, 10, 10, 10]}
-                shadowBlur={100}
+                cornerRadius={shotRadius}
+                shadowBlur={shadowBlur}
                 shadowColor='#000'
-                shadowEnabled={true}
+                shadowEnabled={showShadow}
                 onMouseEnter={() => {
-                  document.body.style.cursor = 'grab';
+                  if (!currentAction) {
+                    document.body.style.cursor = 'grab';
+                  }
                 }}
                 onMouseLeave={() => {
-                  document.body.style.cursor = 'default';
+                  if (!currentAction) {
+                    document.body.style.cursor = 'default';
+                  }
                 }}
-                onMouseDown={() => {
-                  console.log('mouseDown');
-                }}
+                onMouseDown={onActionMouseDown}
+                onMouseMove={onActionMouseMove}
+                onMouseUp={onActionMouseUp}
                 onDragMove={onRectDragMove}
                 onDragEnd={onRectDragEnd}
                 dragBoundFunc={onRectDragBoundFunc}
@@ -257,6 +362,7 @@ const ScreenShot: FC<ScreenShotProps> = ({
                 onTransformStart={() => {
                   setIsDragMove(false);
                 }}
+                onTransform={onRectTransformer}
                 onTransformEnd={onRectTransformEnd}
               />
               <Transformer
@@ -272,7 +378,6 @@ const ScreenShot: FC<ScreenShotProps> = ({
                 borderStrokeWidth={1}
                 centeredScaling={false}
                 keepRatio={false}
-                boundBoxFunc={onTrBoundBoxFunc}
                 enabledAnchors={[
                   'top-left',
                   'top-right',
@@ -287,8 +392,88 @@ const ScreenShot: FC<ScreenShotProps> = ({
             </>
           ) : null}
         </Layer>
+        <Layer>
+          {atMouseImage && atMousePos && !shotRect ? (
+            <>
+              <Image
+                image={mouseImageData.current}
+                width={THUMBNAIL_IMAGE_SIZE}
+                height={THUMBNAIL_IMAGE_SIZE}
+                x={atMousePos.x + 10}
+                y={atMousePos.y + 10}
+                stroke={primaryColor}
+                strokeWidth={2}
+                filters={[Konva.Filters.Pixelate]}
+              />
+              <Text
+                x={atMousePos.x + 10}
+                y={atMousePos.y + 10 + THUMBNAIL_IMAGE_SIZE}
+                height={16}
+                lineHeight={2}
+                fill={primaryColor}
+                fontSize={14}
+                text={`POS: ${atMousePos.x},${atMousePos.y}`}
+              />
+              <Line
+                points={[
+                  atMousePos.x + 10,
+                  atMousePos.y + 10 + THUMBNAIL_IMAGE_SIZE / 2,
+                  atMousePos.x + 10 + THUMBNAIL_IMAGE_SIZE,
+                  atMousePos.y + 10 + THUMBNAIL_IMAGE_SIZE / 2
+                ]}
+                stroke={primaryColor}
+                strokeWidth={1}
+              />
+              <Line
+                points={[
+                  atMousePos.x + 10 + THUMBNAIL_IMAGE_SIZE / 2,
+                  atMousePos.y + 10,
+                  atMousePos.x + 10 + THUMBNAIL_IMAGE_SIZE / 2,
+                  atMousePos.y + 10 + THUMBNAIL_IMAGE_SIZE
+                ]}
+                stroke={primaryColor}
+                strokeWidth={1}
+              />
+            </>
+          ) : null}
+        </Layer>
+        <Layer>
+          {(figures ||[]).map((figure, index) => {
+            return (
+              <Rect
+                key={index}
+                width={figure.width}
+                height={figure.height}
+                x={figure.x}
+                y={figure.y}
+                stroke={'red'}
+                strokeWidth={2}
+                onDragEnd={onRectDragEnd}
+                dragBoundFunc={onRectDragBoundFunc}
+              />
+            )
+          })}
+        </Layer>
       </Stage>
-      {isDragMove ? <ShotTools x={toolsRect.x} y={toolsRect.y} onAction={setCurrentAction} /> : null}
+      {shotRect && isDragMove ? (
+        <ShotRectContainer
+          width={shotRect.width || 0}
+          height={shotRect.height || 0}
+          x={shotRect?.x || 0}
+          y={shotRect?.y || 0}
+          radius={shotRadius}
+          onChange={setShotRadius}
+          shadowEnabled={showShadow}
+          onShadowChange={setShowShadow}
+        />
+      ) : null}
+      {isDragMove ? (
+        <ShotToolsContainer
+          x={toolsRect.x}
+          y={toolsRect.y}
+          onAction={setCurrentAction}
+        />
+      ) : null}
     </div>
   );
 };
