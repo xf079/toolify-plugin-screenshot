@@ -45,7 +45,7 @@ export const useMousePreviewColor = (width: number, height: number) => {
 
     const areaImageData = layer
       .getContext()
-      .getImageData(x, y, THUMBNAIL_SIZE, THUMBNAIL_SIZE);
+      .getImageData(x-(THUMBNAIL_SIZE/2), y-(THUMBNAIL_SIZE/2), THUMBNAIL_SIZE, THUMBNAIL_SIZE);
     setImageData(areaImageData);
     setColorState({
       r,
@@ -56,7 +56,6 @@ export const useMousePreviewColor = (width: number, height: number) => {
     });
   };
 
-  console.log(previewImage);
   return {
     pos,
     colorState,

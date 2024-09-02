@@ -1,9 +1,10 @@
 import { FC, Fragment, useEffect, useMemo, useRef, useState } from 'react';
-import { Image, Line, Text } from 'react-konva';
+import { Image, Line, Rect, Text } from 'react-konva';
 import { THUMBNAIL_IMAGE_SIZE } from './constants.ts';
 import Konva from 'konva';
 import { IColorState } from './hooks/useMousePreviewColor';
 import useImage from 'use-image';
+import { useMemoizedFn } from 'ahooks';
 
 export interface MousePreviewRectProps {
   primaryColor: string;
@@ -18,17 +19,38 @@ export const MousePreviewRect: FC<MousePreviewRectProps> = ({
   color,
   primaryColor
 }) => {
-  const x = useMemo(()=>pos.x + 15, [pos.x]);
-  const y = useMemo(()=>pos.y + 15, [pos.y]);
+  const x = useMemo(() => pos.x + 15, [pos.x]);
+  const y = useMemo(() => pos.y + 15, [pos.y]);
   const [image] = useImage(imageProp);
   const imageRef = useRef<Konva.Image>(null);
+  const [mode, setMode] = useState('RGB');
+
+
+  const handleKeyDown = useMemoizedFn((e: KeyboardEvent) => {
+    console.log(e);
+    if(e.key === 'Shift'){
+      setMode(mode === 'RGB' ? 'HEX' : 'RGB');
+    }
+    if(e.key === 'c'){
+      const copyText = mode === 'RGB' ? `${color.r},${color.g},${color.b}` : `#${color.color}`;
+      // 复制到剪贴板
+      console.log(copyText);
+    }
+  })
 
   useEffect(() => {
     if (image) {
       imageRef.current?.cache();
-      imageRef.current?.pixelSize(12)
+      imageRef.current?.pixelSize(12);
     }
   }, [image]);
+
+  useEffect(() => {
+    window.addEventListener('keydown', handleKeyDown);
+    return ()=>{
+      window.removeEventListener('keydown', handleKeyDown);
+    }
+  }, []);
 
   return (
     <Fragment>
@@ -39,61 +61,88 @@ export const MousePreviewRect: FC<MousePreviewRectProps> = ({
         height={THUMBNAIL_IMAGE_SIZE}
         x={x}
         y={y}
-        stroke={primaryColor}
-        strokeWidth={2}
         filters={[Konva.Filters.Pixelate]}
       />
-      <Text
-        x={x+8}
-        y={y + THUMBNAIL_IMAGE_SIZE - 20}
-        height={16}
-        lineHeight={2}
-        fill='#fff'
-        fontSize={10}
-        stroke='#000'
-        strokeWidth={0.06}
-        text={`${pos.x},${pos.y}`}
+      <Rect
+        x={x}
+        y={y+THUMBNAIL_IMAGE_SIZE}
+        width={THUMBNAIL_IMAGE_SIZE}
+        height={88}
+        fill='rgba(0,0,0,0.7)'
       />
       <Text
-        x={x + THUMBNAIL_IMAGE_SIZE - 50}
-        y={y + THUMBNAIL_IMAGE_SIZE - 10}
+        x={x}
+        y={y + THUMBNAIL_IMAGE_SIZE}
+        width={THUMBNAIL_IMAGE_SIZE}
+        align='center'
         height={16}
         lineHeight={2}
         fill='#fff'
-        fontSize={8}
-        text={`${color.r},${color.g},${color.b}`}
+        fontSize={13}
+        text={`（${pos.x},${pos.y}）`}
+      />
+      <Rect
+        x={x+18}
+        y={y + THUMBNAIL_IMAGE_SIZE + 24}
+        width={15}
+        height={15}
+        cornerRadius={7.5}
+        fill={`#${color.color}`}
       />
       <Text
-        x={x + THUMBNAIL_IMAGE_SIZE - 50}
-        y={y + THUMBNAIL_IMAGE_SIZE - 30}
+        x={x}
+        y={y + THUMBNAIL_IMAGE_SIZE + 20}
+        width={THUMBNAIL_IMAGE_SIZE}
+        align='center'
         height={16}
         lineHeight={2}
-        fontStyle='bold'
         fill='#fff'
-        fontSize={8}
-        text={color.color}
+        fontSize={13}
+        text={mode === 'RGB' ? `${color.r},${color.g},${color.b}` : `#${color.color}`}
+      />
+      <Text
+        x={x}
+        y={y + THUMBNAIL_IMAGE_SIZE + 40}
+        width={THUMBNAIL_IMAGE_SIZE}
+        align='center'
+        height={16}
+        lineHeight={2}
+        fill='#fff'
+        fontSize={13}
+        text='按 C 复制颜色值'
+      />
+      <Text
+        x={x}
+        y={y + THUMBNAIL_IMAGE_SIZE + 60}
+        width={THUMBNAIL_IMAGE_SIZE}
+        align='center'
+        height={16}
+        lineHeight={2}
+        fill='#fff'
+        fontSize={13}
+        text='按 Shit 切换 RGB/HEX'
       />
       <Line
         points={[
-          pos.x + 10,
-          pos.y + 10 + THUMBNAIL_IMAGE_SIZE / 2,
-          pos.x + 10 + THUMBNAIL_IMAGE_SIZE,
-          pos.y + 10 + THUMBNAIL_IMAGE_SIZE / 2
+          x,
+          y + THUMBNAIL_IMAGE_SIZE / 2,
+          x + THUMBNAIL_IMAGE_SIZE,
+          y + THUMBNAIL_IMAGE_SIZE / 2
         ]}
         stroke={primaryColor}
-        opacity={0.3}
-        strokeWidth={6}
+        opacity={0.7}
+        strokeWidth={2}
       />
       <Line
         points={[
-          pos.x + 10 + THUMBNAIL_IMAGE_SIZE / 2,
-          pos.y + 10,
-          pos.x + 10 + THUMBNAIL_IMAGE_SIZE / 2,
-          pos.y + 10 + THUMBNAIL_IMAGE_SIZE
+          x + THUMBNAIL_IMAGE_SIZE / 2,
+          y,
+          x + THUMBNAIL_IMAGE_SIZE / 2,
+          y + THUMBNAIL_IMAGE_SIZE
         ]}
         stroke={primaryColor}
-        opacity={0.3}
-        strokeWidth={6}
+        opacity={0.7}
+        strokeWidth={2}
       />
     </Fragment>
   );

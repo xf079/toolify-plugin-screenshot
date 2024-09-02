@@ -1,24 +1,12 @@
 import { FC, useEffect, useMemo, useRef, useState } from 'react';
-import {
-  Image,
-  Layer,
-  Line,
-  Rect,
-  Stage,
-  Text,
-  Transformer
-} from 'react-konva';
+import { Image, Layer, Rect, Stage, Transformer } from 'react-konva';
 import { useMemoizedFn } from 'ahooks';
 import Konva from 'konva';
 import { Box } from 'konva/lib/shapes/Transformer';
 import { ShotToolsContainer } from './ShotToolsContainer';
 
-import BgImage from '../../assets/bg.jpg';
-import {
-  SHOT_MIN_SIZE,
-  THUMBNAIL_IMAGE_SIZE,
-  THUMBNAIL_SIZE
-} from './constants';
+import BgImage from '../../assets/bg2.webp';
+import { SHOT_MIN_SIZE } from './constants';
 import { ShotRectContainer } from './ShotRectContainer.tsx';
 import { useMouseActon } from './hooks/useMouseActon';
 import { useMousePreviewColor } from './hooks/useMousePreviewColor';
@@ -294,7 +282,7 @@ const ScreenShot: FC<ScreenShotProps> = ({
             fill='rgba(0,0,0,0.5)'
             onMouseLeave={() => {
               if (!shotRect) {
-                // document.body.style.cursor = 'crosshair';
+                document.body.style.cursor = 'crosshair';
               }
             }}
           />
