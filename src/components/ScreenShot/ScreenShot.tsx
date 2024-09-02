@@ -20,7 +20,9 @@ import {
   THUMBNAIL_SIZE
 } from './constants';
 import { ShotRectContainer } from './ShotRectContainer.tsx';
-import { useActionHandle } from './hooks/useActionHanlde.tsx';
+import { useMouseActon } from './hooks/useMouseActon';
+import { useMousePreviewColor } from './hooks/useMousePreviewColor';
+import { MousePreviewRect } from './MousePreviewRect.tsx';
 
 export interface ScreenShotProps {
   width: number;
@@ -41,18 +43,12 @@ const ScreenShot: FC<ScreenShotProps> = ({
   const start = useRef({ x: 0, y: 0 });
   // 是否正在拖动截图区域
   const [isDragMove, setIsDragMove] = useState(false);
-  // 鼠标当前位置的颜色
-  const [atMouseColor, setAtMouseColor] = useState<string[]>();
-  const [atMouseImage, setAtMouseImage] = useState<ImageData>();
-  const [atMouseImageSrc, setAtMouseImageSrc] = useState<string>();
-  const [atMousePos, setAtMousePos] = useState<{ x: number; y: number }>();
   // 截图区域
   const [shotRect, setShotRect] = useState<Konva.NodeConfig>();
   // 区域圆角
   const [shotRadius, setShotRadius] = useState(10);
   // 是否显示阴影
   const [showShadow, setShowShadow] = useState(false);
-  const [shadowBlur, setShadowBlur] = useState(10);
 
   // 当前操作
   const [currentAction, setCurrentAction] = useState<string>();
@@ -84,11 +80,14 @@ const ScreenShot: FC<ScreenShotProps> = ({
     };
   }, [height, shotRect]);
 
-  const { figures,onActionMouseDown, onActionMouseMove, onActionMouseUp } =
-    useActionHandle({
+  const { figures, onActionMouseDown, onActionMouseMove, onActionMouseUp } =
+    useMouseActon({
       action: currentAction,
       shotRect
     });
+
+  const { pos, colorState, previewImage, onMouseMoveHandle } =
+    useMousePreviewColor(width, height);
 
   /**
    * 开始绘制截图区域
@@ -126,41 +125,15 @@ const ScreenShot: FC<ScreenShotProps> = ({
       if (!shotRect) {
         const stage = e.target.getStage();
         if (!stage) return;
-        const pos = stage.getPointerPosition();
-        if (pos) {
-          const x = Number(pos.x.toFixed(0));
-          const y = Number(pos.y.toFixed(0));
-          // 使用 Konva 的方法获取颜色
-          const layer = stage.getLayers()[0];
-          const imageData = layer
-            .getContext()
-            .getImageData(x + 10, y + 10, 10, 10);
-          // mouseImageData.current.src = imageData.toDataURL();
-          setAtMouseImage(imageData);
-          setAtMousePos({ x, y });
-          // console.log(pixelData);
-        }
+        onMouseMoveHandle(stage);
       }
     }
   };
-
-  useEffect(() => {
-    if (atMouseImage) {
-      const canvas = document.createElement('canvas');
-      canvas.width = atMouseImage.width;
-      canvas.height = atMouseImage.height;
-      const ctx = canvas.getContext('2d');
-      ctx.putImageData(atMouseImage, 0, 0);
-      mouseImageData.current.src = canvas.toDataURL();
-      setAtMouseImageSrc(canvas.toDataURL());
-    }
-  }, [atMouseImage]);
 
   /**
    * 结束绘制截图区域
    */
   const handleDragEnd = useMemoizedFn(() => {
-    console.log('handleDragEnd');
     if (!shotRect) return;
     isDrawing.current = false;
     if (
@@ -267,8 +240,6 @@ const ScreenShot: FC<ScreenShotProps> = ({
       const rectX = shotRect?.x || 0;
       const rectY = shotRect?.y || 0;
 
-      console.log(rectX, rectY);
-
       const newW = Number(newBoundBox.width.toFixed(0));
       const newH = Number(newBoundBox.height.toFixed(0));
 
@@ -304,7 +275,6 @@ const ScreenShot: FC<ScreenShotProps> = ({
     image.current.src = BgImage;
   }, []);
 
-  console.log(figures);
   return (
     <div id='screenshot'>
       <Stage
@@ -339,7 +309,6 @@ const ScreenShot: FC<ScreenShotProps> = ({
                 fill='rgba(0,0,0)'
                 draggable={!currentAction}
                 cornerRadius={shotRadius}
-                shadowBlur={shadowBlur}
                 shadowColor='#000'
                 shadowEnabled={showShadow}
                 onMouseEnter={() => {
@@ -393,52 +362,17 @@ const ScreenShot: FC<ScreenShotProps> = ({
           ) : null}
         </Layer>
         <Layer>
-          {atMouseImage && atMousePos && !shotRect ? (
-            <>
-              <Image
-                image={mouseImageData.current}
-                width={THUMBNAIL_IMAGE_SIZE}
-                height={THUMBNAIL_IMAGE_SIZE}
-                x={atMousePos.x + 10}
-                y={atMousePos.y + 10}
-                stroke={primaryColor}
-                strokeWidth={2}
-                filters={[Konva.Filters.Pixelate]}
-              />
-              <Text
-                x={atMousePos.x + 10}
-                y={atMousePos.y + 10 + THUMBNAIL_IMAGE_SIZE}
-                height={16}
-                lineHeight={2}
-                fill={primaryColor}
-                fontSize={14}
-                text={`POS: ${atMousePos.x},${atMousePos.y}`}
-              />
-              <Line
-                points={[
-                  atMousePos.x + 10,
-                  atMousePos.y + 10 + THUMBNAIL_IMAGE_SIZE / 2,
-                  atMousePos.x + 10 + THUMBNAIL_IMAGE_SIZE,
-                  atMousePos.y + 10 + THUMBNAIL_IMAGE_SIZE / 2
-                ]}
-                stroke={primaryColor}
-                strokeWidth={1}
-              />
-              <Line
-                points={[
-                  atMousePos.x + 10 + THUMBNAIL_IMAGE_SIZE / 2,
-                  atMousePos.y + 10,
-                  atMousePos.x + 10 + THUMBNAIL_IMAGE_SIZE / 2,
-                  atMousePos.y + 10 + THUMBNAIL_IMAGE_SIZE
-                ]}
-                stroke={primaryColor}
-                strokeWidth={1}
-              />
-            </>
+          {previewImage && colorState && pos && !shotRect ? (
+            <MousePreviewRect
+              pos={pos}
+              color={colorState}
+              image={previewImage}
+              primaryColor={primaryColor}
+            />
           ) : null}
         </Layer>
         <Layer>
-          {(figures ||[]).map((figure, index) => {
+          {(figures || []).map((figure, index) => {
             return (
               <Rect
                 key={index}
@@ -451,7 +385,7 @@ const ScreenShot: FC<ScreenShotProps> = ({
                 onDragEnd={onRectDragEnd}
                 dragBoundFunc={onRectDragBoundFunc}
               />
-            )
+            );
           })}
         </Layer>
       </Stage>

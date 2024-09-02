@@ -6,7 +6,7 @@ export interface IActionHandleOptions {
   shotRect?: Konva.NodeConfig;
 }
 
-export const useActionHandle = (options: IActionHandleOptions) => {
+export const useMouseActon = (options: IActionHandleOptions) => {
   const [currentFigure, setCurrentFigure] = useState<Konva.NodeConfig>();
   // 是否开始绘制截图区域
   const isDrawing = useRef(false);
