@@ -7,9 +7,9 @@ export interface ShotRectContainerProps {
   width: number;
   height: number;
   radius: number;
-  shadowEnabled: boolean;
-  onChange: (val: number) => void;
+  shadow: boolean;
   onRectChange: (width: number, height: number) => void;
+  onRadiusChange: (radius: number) => void;
   onShadowChange: (shadowEnabled: boolean) => void;
 }
 export const ShotRectContainer: FC<ShotRectContainerProps> = ({
@@ -18,8 +18,9 @@ export const ShotRectContainer: FC<ShotRectContainerProps> = ({
   width,
   height,
   radius,
-  shadowEnabled,
-  onChange,
+  shadow,
+  onRectChange,
+  onRadiusChange,
   onShadowChange
 }) => {
   return (
@@ -36,6 +37,9 @@ export const ShotRectContainer: FC<ShotRectContainerProps> = ({
           style={{ width: 50 }}
           value={width}
           variant='filled'
+          onChange={(e) => {
+            onRectChange(Number(e.target.value), height);
+          }}
         />
         <span>x</span>
         <Input
@@ -44,17 +48,20 @@ export const ShotRectContainer: FC<ShotRectContainerProps> = ({
           style={{ width: 50 }}
           value={height}
           variant='filled'
+          onChange={(e) => {
+            onRectChange(width, Number(e.target.value));
+          }}
         />
       </Flex>
       <Slider
-        style={{ width: 120 }}
+        style={{ width: 80 }}
         defaultValue={radius}
         min={0}
         max={100}
-        onChange={onChange}
+        onChange={onRadiusChange}
       />
       <Checkbox
-        checked={shadowEnabled}
+        checked={shadow}
         onChange={(e) => {
           onShadowChange(e.target.checked);
         }}

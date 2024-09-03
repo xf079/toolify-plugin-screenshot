@@ -1,10 +1,10 @@
 import { FC, Fragment, useEffect, useMemo, useRef, useState } from 'react';
-import { Image, Line, Rect, Text } from 'react-konva';
-import { THUMBNAIL_IMAGE_SIZE } from './constants.ts';
 import Konva from 'konva';
-import { IColorState } from './hooks/useMousePreviewColor';
+import { Image, Line, Rect, Text } from 'react-konva';
 import useImage from 'use-image';
 import { useMemoizedFn } from 'ahooks';
+import { THUMBNAIL_IMAGE_SIZE } from './constants';
+import { IColorState } from './hooks/useMousePreviewColor';
 
 export interface MousePreviewRectProps {
   primaryColor: string;
@@ -68,7 +68,7 @@ export const MousePreviewRect: FC<MousePreviewRectProps> = ({
         y={y+THUMBNAIL_IMAGE_SIZE}
         width={THUMBNAIL_IMAGE_SIZE}
         height={88}
-        fill='rgba(0,0,0,0.7)'
+        fill='rgba(0,0,0,0.6)'
       />
       <Text
         x={x}

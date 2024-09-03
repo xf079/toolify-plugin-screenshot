@@ -6,7 +6,13 @@ import { Box } from 'konva/lib/shapes/Transformer';
 import { ShotToolsContainer } from './ShotToolsContainer';
 
 import BgImage from '../../assets/bg2.webp';
-import { SHOT_MIN_SIZE } from './constants';
+import {
+  SHOT_MIN_SIZE,
+  SHOT_TOOLBAR_HEIGHT,
+  SHOT_TOOLBAR_MODAL_HEIGHT,
+  SHOT_TOOLBAR_SPLIT,
+  SHOT_TOOLBAR_WIDTH
+} from './constants';
 import { ShotRectContainer } from './ShotRectContainer.tsx';
 import { useMouseActon } from './hooks/useMouseActon';
 import { useMousePreviewColor } from './hooks/useMousePreviewColor';
@@ -24,7 +30,6 @@ const ScreenShot: FC<ScreenShotProps> = ({
   primaryColor = '#4096ff'
 }) => {
   const image = useRef(new window.Image());
-  const mouseImageData = useRef(new window.Image());
   // 是否开始绘制截图区域
   const isDrawing = useRef(false);
   // 开始绘制截图区域的起点
@@ -51,21 +56,29 @@ const ScreenShot: FC<ScreenShotProps> = ({
     const shotY = shotRect.y || 0;
     const shotX = shotRect.x || 0;
 
-    const isFooter = height - (shotY + shotH) > 44;
-    const isTop = shotY > 44;
-    let toolsY = isFooter ? shotY + shotH : shotY - 44;
-    if (isFooter) {
-      toolsY = shotY + shotH + 8;
-    } else if (isTop) {
-      toolsY = shotY - 44 - 8;
-    }
+    const pendY = shotY + shotH;
+    const pendX = shotX + shotW;
 
-    const toolsX = shotW + shotX > 458 ? shotX + shotW - 458 : shotX;
+    const y =
+      pendY + SHOT_TOOLBAR_HEIGHT + SHOT_TOOLBAR_SPLIT < height
+        ? pendY + SHOT_TOOLBAR_SPLIT
+        : pendY - (SHOT_TOOLBAR_HEIGHT + SHOT_TOOLBAR_SPLIT);
 
-    return {
-      y: toolsY,
-      x: toolsX
-    };
+    const x =
+      pendX > SHOT_TOOLBAR_WIDTH + SHOT_TOOLBAR_SPLIT
+        ? pendX - (SHOT_TOOLBAR_WIDTH + SHOT_TOOLBAR_SPLIT / 2)
+        : shotX + SHOT_TOOLBAR_SPLIT / 2;
+
+    const position =
+      pendY +
+        SHOT_TOOLBAR_HEIGHT +
+        SHOT_TOOLBAR_SPLIT +
+        SHOT_TOOLBAR_MODAL_HEIGHT <
+      height
+        ? 'bottom'
+        : 'top';
+
+    return { x, y, position };
   }, [height, shotRect]);
 
   const { figures, onActionMouseDown, onActionMouseMove, onActionMouseUp } =
@@ -377,15 +390,22 @@ const ScreenShot: FC<ScreenShotProps> = ({
           })}
         </Layer>
       </Stage>
-      {shotRect && isDragMove ? (
+      {shotRect ? (
         <ShotRectContainer
           width={shotRect.width || 0}
           height={shotRect.height || 0}
           x={shotRect?.x || 0}
           y={shotRect?.y || 0}
           radius={shotRadius}
-          onChange={setShotRadius}
-          shadowEnabled={showShadow}
+          shadow={showShadow}
+          onRectChange={(_w, _h) => {
+            setShotRect({
+              ...shotRect,
+              width: _w,
+              height: _h
+            });
+          }}
+          onRadiusChange={setShotRadius}
           onShadowChange={setShowShadow}
         />
       ) : null}
