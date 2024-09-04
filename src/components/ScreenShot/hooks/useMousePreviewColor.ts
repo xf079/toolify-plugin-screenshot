@@ -8,7 +8,7 @@ export interface IColorState {
   g: number;
   b: number;
   a: number;
-  color: string;
+  hex: string;
 }
 
 export const useMousePreviewColor = (width: number, height: number) => {
@@ -45,20 +45,25 @@ export const useMousePreviewColor = (width: number, height: number) => {
 
     const areaImageData = layer
       .getContext()
-      .getImageData(x-(THUMBNAIL_SIZE/2), y-(THUMBNAIL_SIZE/2), THUMBNAIL_SIZE, THUMBNAIL_SIZE);
+      .getImageData(
+        x - THUMBNAIL_SIZE / 2,
+        y - THUMBNAIL_SIZE / 2,
+        THUMBNAIL_SIZE,
+        THUMBNAIL_SIZE
+      );
     setImageData(areaImageData);
     setColorState({
       r,
       g,
       b,
-      a,
-      color: rgbToHex(r, g, b)
+      a: a / 255,
+      hex: rgbToHex(r, g, b)
     });
   };
 
   return {
     pos,
-    colorState,
+    color: colorState,
     previewImage,
     onMouseMoveHandle
   };
