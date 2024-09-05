@@ -1,22 +1,26 @@
 import { FC } from 'react';
 import { Checkbox, Flex, Input, Slider } from 'antd';
 
-export interface ShotRectContainerProps {
-  x: number;
-  y: number;
+export interface ShotSizeContainerProps {
+  windowWidth: number;
+  windowHeight: number;
   width: number;
   height: number;
+  x: number;
+  y: number;
   radius: number;
   shadow: boolean;
   onRectChange: (width: number, height: number) => void;
   onRadiusChange: (radius: number) => void;
   onShadowChange: (shadowEnabled: boolean) => void;
 }
-export const ShotRectContainer: FC<ShotRectContainerProps> = ({
-  x,
-  y,
+export const ShotSizeContainer: FC<ShotSizeContainerProps> = ({
+  windowWidth,
+  windowHeight,
   width,
   height,
+  x,
+  y,
   radius,
   shadow,
   onRectChange,
@@ -25,10 +29,10 @@ export const ShotRectContainer: FC<ShotRectContainerProps> = ({
 }) => {
   return (
     <Flex
-      className='shot-rect-container'
+      className='shot-size-container'
       align='center'
       justify='start'
-      style={{ top: y - 36, left: x }}
+      style={{ top: y, left: x }}
     >
       <Flex className='shot-rect' gap={8}>
         <Input
@@ -38,7 +42,14 @@ export const ShotRectContainer: FC<ShotRectContainerProps> = ({
           value={width}
           variant='filled'
           onChange={(e) => {
-            onRectChange(Number(e.target.value), height);
+            const value = Number(e.target.value);
+            if (/^\d+$/.test(e.target.value)) {
+              const newWidth =
+                x + value < windowWidth ? value : windowWidth - x;
+              onRectChange(newWidth, height);
+            } else {
+              onRectChange(width, height);
+            }
           }}
         />
         <span>x</span>
@@ -49,7 +60,14 @@ export const ShotRectContainer: FC<ShotRectContainerProps> = ({
           value={height}
           variant='filled'
           onChange={(e) => {
-            onRectChange(width, Number(e.target.value));
+            const value = Number(e.target.value);
+            if (/^\d+$/.test(e.target.value)) {
+              const newHeight =
+                y + value < windowHeight ? value : windowHeight - y;
+              onRectChange(width, newHeight);
+            } else {
+              onRectChange(width, height);
+            }
           }}
         />
       </Flex>

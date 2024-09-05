@@ -1,4 +1,5 @@
 import { FC, FunctionComponent, SVGProps, useState } from 'react';
+import { Tooltip } from 'antd';
 
 import RectIcon from './icon/rect-icon.svg?react';
 import LineIcon from './icon/line-icon.svg?react';
@@ -12,9 +13,8 @@ import RefreshIcon from './icon/refresh-icon.svg?react';
 import CloseIcon from './icon/close-icon.svg?react';
 import DownloadIcon from './icon/download-icon.svg?react';
 import SuccessIcon from './icon/success-icon.svg?react';
-import { Tooltip } from 'antd';
 
-export interface ScreenShotToolsProps {
+export interface ShotToolsContainerProps {
   x: number;
   y: number;
   onAction: (name: string) => void;
@@ -119,7 +119,7 @@ const tools: ToolsItem[] = [
   }
 ];
 
-export const ShotToolsContainer: FC<ScreenShotToolsProps> = (props) => {
+export const ShotToolsContainer: FC<ShotToolsContainerProps> = (props) => {
   const [currentTool, setCurrentTool] = useState<ToolsItem>();
   const onItemClick = (item: ToolsItem) => {
     if (item.isSelect) {
@@ -129,7 +129,7 @@ export const ShotToolsContainer: FC<ScreenShotToolsProps> = (props) => {
   };
   return (
     <div
-      className='screen-shot-tools'
+      className='shot-tools-container'
       style={{ left: `${props.x}px`, top: `${props.y}px` }}
     >
       <div className='container'>

@@ -10,6 +10,10 @@ export interface IActionHandleOptions {
   onMouseUpCallback?: (e: Konva.KonvaEventObject<MouseEvent>) => void;
 }
 
+interface IShape extends Konva.NodeConfig {
+  type: string;
+}
+
 export const useMouseActon = (options: IActionHandleOptions) => {
   // 是否开始绘制截图区域
   const isDrawing = useRef(false);
@@ -21,14 +25,12 @@ export const useMouseActon = (options: IActionHandleOptions) => {
   const mode = useRef<'shot' | 'figure' | undefined>();
   // 截图区域
   const [shotRect, updateShotRect] = useState<Konva.NodeConfig>();
+  const [list, setList] = useState<IShape[]>([]);
+  const [current, setCurrent] = useState<IShape>();
 
-  const [shapes, setShapes] = useState<Konva.NodeConfig[]>([]);
-
-  const [currentFigure, setCurrentFigure] = useState<Konva.NodeConfig>();
-
-  const figures = useMemo<Konva.NodeConfig[]>(
-    () => (currentFigure ? [...shapes, currentFigure] : []),
-    [shapes, currentFigure]
+  const figures = useMemo<IShape[]>(
+    () => (current ? [...list, current] : []),
+    [list, current]
   );
 
   const onActionMouseDownHandler = useMemoizedFn(
@@ -60,8 +62,49 @@ export const useMouseActon = (options: IActionHandleOptions) => {
           mode.current = 'figure';
           start.current = { x: e.evt.layerX, y: e.evt.layerY };
           switch (options.action) {
-            case 'Delete':
-              setCurrentFigure(undefined);
+            case 'Rect':
+              setCurrent({
+                type: 'Rect',
+                ...start.current,
+                width: 0,
+                height: 0
+              });
+              break;
+            case 'Circle':
+              setCurrent({
+                type: 'Circle',
+                ...start.current
+              });
+              break;
+            case 'Line':
+              setCurrent({
+                type: 'Line',
+                ...start.current
+              });
+              break;
+            case 'Arrow':
+              setCurrent({
+                type: 'Arrow',
+                ...start.current
+              });
+              break;
+            case 'Pencil':
+              setCurrent({
+                type: 'Pencil',
+                ...start.current
+              });
+              break;
+            case 'Mosaic':
+              setCurrent({
+                type: 'Mosaic',
+                ...start.current
+              });
+              break;
+            case 'Text':
+              setCurrent({
+                type: 'Text',
+                ...start.current
+              });
               break;
             default:
               break;
@@ -93,12 +136,60 @@ export const useMouseActon = (options: IActionHandleOptions) => {
           const height = Math.abs(endY - start.current.y);
           switch (options.action) {
             case 'Rect':
-              setCurrentFigure({
+              setCurrent({
+                type: 'Rect',
                 x: Math.min(start.current.x, endX),
                 y: Math.min(start.current.y, endY),
                 width,
                 height
               });
+              break;
+            case 'Circle':
+              setCurrent({
+                type: 'Circle',
+                x: Math.min(start.current.x, endX),
+                y: Math.min(start.current.y, endY),
+                width,
+                height
+              });
+              break;
+            case 'Line':
+              setCurrent({
+                type: 'Line',
+                x: Math.min(start.current.x, endX),
+                y: Math.min(start.current.y, endY),
+                width,
+                height
+              });
+              break;
+            case 'Arrow':
+              setCurrent({
+                type: 'Arrow',
+                x: Math.min(start.current.x, endX),
+                y: Math.min(start.current.y, endY),
+                width,
+                height
+              });
+              break;
+            case 'Pencil':
+              setCurrent({
+                type: 'Pencil',
+                x: Math.min(start.current.x, endX),
+                y: Math.min(start.current.y, endY),
+                width,
+                height
+              });
+              break;
+            case 'Mosaic':
+              setCurrent({
+                type: 'Mosaic',
+                x: Math.min(start.current.x, endX),
+                y: Math.min(start.current.y, endY),
+                width,
+                height
+              });
+              break;
+            default:
               break;
           }
         }
@@ -120,9 +211,9 @@ export const useMouseActon = (options: IActionHandleOptions) => {
             updateShotRect(undefined);
           }
         }
-        if (mode.current === 'figure' && currentFigure) {
-          setShapes(shapes.concat(currentFigure));
-          setCurrentFigure(undefined);
+        if (mode.current === 'figure' && current) {
+          setList(list.concat(current));
+          setCurrent(undefined);
         }
 
         mode.current = undefined;
@@ -133,10 +224,10 @@ export const useMouseActon = (options: IActionHandleOptions) => {
   return {
     isDrawing,
     shotRect,
+    figures,
     updateShotRect,
     onActionMouseDownHandler,
     onActionMouseMoveHandler,
-    onActionMouseUpHandler,
-    figures
+    onActionMouseUpHandler
   };
 };

@@ -1,21 +1,29 @@
 import { FC, Fragment, useEffect, useMemo, useRef, useState } from 'react';
-import { Group, Image, Layer, Rect, Stage, Transformer } from 'react-konva';
+import {
+  Circle,
+  Group,
+  Image,
+  Layer,
+  Rect,
+  Stage,
+  Text,
+  Transformer
+} from 'react-konva';
 import { useMemoizedFn } from 'ahooks';
 import Konva from 'konva';
-import { Box } from 'konva/lib/shapes/Transformer';
-import { ShotToolsContainer } from './ShotToolsContainer';
-
-import BgImage from '../../assets/bg2.webp';
 import {
   SHOT_TOOLBAR_HEIGHT,
   SHOT_TOOLBAR_MODAL_HEIGHT,
   SHOT_TOOLBAR_SPLIT,
   SHOT_TOOLBAR_WIDTH
 } from './constants';
-import { ShotRectContainer } from './ShotRectContainer.tsx';
 import { useMouseActon } from './hooks/useMouseActon';
 import { useMousePreviewColor } from './hooks/useMousePreviewColor';
-import { MousePreviewRect } from './MousePreviewRect';
+import { ShotMousePreviewRect } from './ShotMousePreviewRect.tsx';
+import { ShotSizeContainer } from './ShotSizeContainer.tsx';
+import { ShotToolsContainer } from './ShotToolsContainer';
+
+import BgImage from '../../assets/bg2.webp';
 
 export interface ScreenShotProps {
   width: number;
@@ -31,8 +39,6 @@ const ScreenShot: FC<ScreenShotProps> = ({
   const image = useRef(new window.Image());
   // 是否正在拖动截图区域
   const [isDragMove, setIsDragMove] = useState(false);
-
-  const overflowRef = useRef<Konva.Rect>(null);
 
   // 区域圆角
   const [shotRadius, setShotRadius] = useState(10);
@@ -50,7 +56,6 @@ const ScreenShot: FC<ScreenShotProps> = ({
     height
   );
   const {
-    isDrawing,
     shotRect,
     figures,
     updateShotRect,
@@ -68,6 +73,20 @@ const ScreenShot: FC<ScreenShotProps> = ({
       }
     }
   });
+
+  const sizeRect = useMemo(() => {
+    if (!shotRect) return { x: 0, y: 0 };
+    const shotW = shotRect.width || 0;
+    const shotY = shotRect.y || 0;
+    const shotX = shotRect.x || 0;
+    const y = shotY > 34 ? shotY - 34 : shotY + 10;
+    const x =
+      shotW > 325 ? shotX + 6 : width - shotX > 325 ? shotX + 6 : width - 325;
+    return {
+      x: x,
+      y: y
+    };
+  }, [width, shotRect]);
 
   const toolsRect = useMemo(() => {
     if (!shotRect) return { x: 0, y: 0 };
@@ -115,18 +134,20 @@ const ScreenShot: FC<ScreenShotProps> = ({
    * 截图区域的鼠标拖动结束事件
    * @param e 鼠标事件对象
    */
-  const onRectDragEnd = useMemoizedFn((e: Konva.KonvaEventObject<MouseEvent>) => {
-    console.log(e);
-    updateShotRect({
-      x: shotRef.current?.x(),
-      y: shotRef.current?.y(),
-      width: shotRef.current?.width(),
-      height: shotRef.current?.height()
-    });
-    if (isDragMove) {
-      setIsDragMove(false);
+  const onRectDragEnd = useMemoizedFn(
+    (e: Konva.KonvaEventObject<MouseEvent>) => {
+      console.log(e);
+      updateShotRect({
+        x: shotRef.current?.x(),
+        y: shotRef.current?.y(),
+        width: shotRef.current?.width(),
+        height: shotRef.current?.height()
+      });
+      if (isDragMove) {
+        setIsDragMove(false);
+      }
     }
-  });
+  );
 
   /**
    * 截图区域的拖动边界限制
@@ -188,37 +209,6 @@ const ScreenShot: FC<ScreenShotProps> = ({
     setIsDragMove(false);
   };
 
-  const onTrBoundBoxFunc = useMemoizedFn(
-    (_oldBoundBox: Box, newBoundBox: Box) => {
-      const newX = Number(newBoundBox.x.toFixed(0));
-      const newY = Number(newBoundBox.y.toFixed(0));
-      const maxX = Math.max(0, newBoundBox.x < 0 ? 0 : newX);
-      const maxY = Math.max(0, newBoundBox.y < 0 ? 0 : newY);
-      const rectX = shotRect?.x || 0;
-      const rectY = shotRect?.y || 0;
-
-      const newW = Number(newBoundBox.width.toFixed(0));
-      const newH = Number(newBoundBox.height.toFixed(0));
-
-      if (maxX < rectX) {
-        newBoundBox.width = newW >= rectX ? rectX : newW;
-      } else {
-        newBoundBox.width = newW >= width - rectX ? width - rectX : newW;
-      }
-      if (maxY < rectY) {
-        newBoundBox.height = newH >= rectY ? rectY : newH;
-      } else {
-        newBoundBox.height = newH >= height - rectY ? height - rectY : newH;
-      }
-
-      return {
-        ...newBoundBox,
-        x: maxX,
-        y: maxY
-      };
-    }
-  );
-
   useEffect(() => {
     if (shotRect && shotRef.current && shotTrRef.current) {
       shotTrRef.current?.nodes([shotRef.current]);
@@ -249,7 +239,6 @@ const ScreenShot: FC<ScreenShotProps> = ({
           onMouseUp={onActionMouseUpHandler}
         >
           <Rect
-            ref={overflowRef}
             x={0}
             y={0}
             width={width}
@@ -322,7 +311,48 @@ const ScreenShot: FC<ScreenShotProps> = ({
             </Fragment>
           ) : null}
           <Group>
+            {shotRect ? (
+              <Text
+                x={shotRect!.x}
+                y={shotRect!.y}
+                stroke='red'
+                height={120}
+                width={50}
+                text='123'
+                strokeWidth={1}
+              ></Text>
+            ) : null}
+
             {(figures || []).map((figure, index) => {
+              if (figure.type === 'Rect') {
+                return (
+                  <Rect
+                    key={index}
+                    width={figure.width}
+                    height={figure.height}
+                    x={figure.x}
+                    y={figure.y}
+                    stroke={'red'}
+                    strokeWidth={2}
+                    onDragEnd={onRectDragEnd}
+                    dragBoundFunc={onRectDragBoundFunc}
+                  />
+                );
+              }
+              if (figure.type === 'Circle') {
+                return (
+                  <Circle
+                    key={index}
+                    radius={figure.radius}
+                    x={figure.x}
+                    y={figure.y}
+                    stroke={'red'}
+                    strokeWidth={2}
+                    onDragEnd={onRectDragEnd}
+                    dragBoundFunc={onRectDragBoundFunc}
+                  />
+                );
+              }
               return (
                 <Rect
                   key={index}
@@ -339,7 +369,7 @@ const ScreenShot: FC<ScreenShotProps> = ({
             })}
           </Group>
           {previewImage && color && pos && !shotRect ? (
-            <MousePreviewRect
+            <ShotMousePreviewRect
               pos={pos}
               color={color}
               image={previewImage}
@@ -349,11 +379,13 @@ const ScreenShot: FC<ScreenShotProps> = ({
         </Layer>
       </Stage>
       {!isDragMove && shotRect ? (
-        <ShotRectContainer
+        <ShotSizeContainer
+          windowWidth={width}
+          windowHeight={height}
           width={shotRect.width || 0}
           height={shotRect.height || 0}
-          x={shotRect?.x || 0}
-          y={shotRect?.y || 0}
+          x={sizeRect.x}
+          y={sizeRect.y}
           radius={shotRadius}
           shadow={showShadow}
           onRectChange={(_w, _h) => {

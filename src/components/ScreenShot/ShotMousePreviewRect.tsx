@@ -6,14 +6,14 @@ import { useMemoizedFn } from 'ahooks';
 import { THUMBNAIL_IMAGE_SIZE } from './constants';
 import { IColorState } from './hooks/useMousePreviewColor';
 
-export interface MousePreviewRectProps {
+export interface ShotMousePreviewRectProps {
   primaryColor: string;
   pos: Konva.Vector2d;
   image: string;
   color: IColorState;
 }
 
-export const MousePreviewRect: FC<MousePreviewRectProps> = ({
+export const ShotMousePreviewRect: FC<ShotMousePreviewRectProps> = ({
   pos,
   image: imageProp,
   color,
@@ -25,18 +25,17 @@ export const MousePreviewRect: FC<MousePreviewRectProps> = ({
   const imageRef = useRef<Konva.Image>(null);
   const [mode, setMode] = useState('RGB');
 
-
   const handleKeyDown = useMemoizedFn((e: KeyboardEvent) => {
-    console.log(e);
-    if(e.key === 'Shift'){
+    if (e.key === 'Shift') {
       setMode(mode === 'RGB' ? 'HEX' : 'RGB');
     }
-    if(e.key === 'c'){
-      const copyText = mode === 'RGB' ? `${color.r},${color.g},${color.b}` : `#${color.color}`;
+    if (e.key === 'c') {
+      const copyText =
+        mode === 'RGB' ? `${color.r},${color.g},${color.b}` : `#${color.hex}`;
       // 复制到剪贴板
       console.log(copyText);
     }
-  })
+  });
 
   useEffect(() => {
     if (image) {
@@ -47,9 +46,9 @@ export const MousePreviewRect: FC<MousePreviewRectProps> = ({
 
   useEffect(() => {
     window.addEventListener('keydown', handleKeyDown);
-    return ()=>{
+    return () => {
       window.removeEventListener('keydown', handleKeyDown);
-    }
+    };
   }, []);
 
   return (
@@ -65,7 +64,7 @@ export const MousePreviewRect: FC<MousePreviewRectProps> = ({
       />
       <Rect
         x={x}
-        y={y+THUMBNAIL_IMAGE_SIZE}
+        y={y + THUMBNAIL_IMAGE_SIZE}
         width={THUMBNAIL_IMAGE_SIZE}
         height={88}
         fill='rgba(0,0,0,0.6)'
@@ -82,12 +81,12 @@ export const MousePreviewRect: FC<MousePreviewRectProps> = ({
         text={`（${pos.x},${pos.y}）`}
       />
       <Rect
-        x={x+18}
+        x={x + 18}
         y={y + THUMBNAIL_IMAGE_SIZE + 24}
         width={15}
         height={15}
         cornerRadius={7.5}
-        fill={`#${color.color}`}
+        fill={`#${color.hex}`}
       />
       <Text
         x={x}
@@ -98,7 +97,9 @@ export const MousePreviewRect: FC<MousePreviewRectProps> = ({
         lineHeight={2}
         fill='#fff'
         fontSize={13}
-        text={mode === 'RGB' ? `${color.r},${color.g},${color.b}` : `#${color.color}`}
+        text={
+          mode === 'RGB' ? `${color.r},${color.g},${color.b}` : `#${color.hex}`
+        }
       />
       <Text
         x={x}
