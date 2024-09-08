@@ -1,14 +1,6 @@
 import { FC, Fragment, useEffect, useMemo, useRef, useState } from 'react';
-import {
-  Circle,
-  Group,
-  Image,
-  Layer,
-  Rect,
-  Stage,
-  Text,
-  Transformer
-} from 'react-konva';
+import { ConfigProvider } from 'antd';
+import { Image, Layer, Rect, Stage, Transformer } from 'react-konva';
 import { useMemoizedFn } from 'ahooks';
 import Konva from 'konva';
 import {
@@ -19,24 +11,25 @@ import {
 } from './constants';
 import { useMouseActon } from './hooks/useMouseActon';
 import { useMousePreviewColor } from './hooks/useMousePreviewColor';
-import { ShotMousePreviewRect } from './ShotMousePreviewRect.tsx';
-import { ShotSizeContainer } from './ShotSizeContainer.tsx';
-import { ShotToolsContainer } from './ShotToolsContainer';
-
-import BgImage from '../../assets/bg2.webp';
+import { ShotMousePreviewRect } from './components/ShotMousePreviewRect';
+import { ShotSizeContainer } from './components/ShotSizeContainer';
+import { ShotToolsContainer } from './components/ShotToolsContainer';
+import { Shape } from './components/shape';
 
 export interface ScreenShotProps {
+  image: string;
   width: number;
   height: number;
   primaryColor?: string;
 }
 
 const ScreenShot: FC<ScreenShotProps> = ({
+  image,
   width,
   height,
   primaryColor = '#4096ff'
 }) => {
-  const image = useRef(new window.Image());
+  const source = useRef(new window.Image());
   // 是否正在拖动截图区域
   const [isDragMove, setIsDragMove] = useState(false);
 
@@ -51,10 +44,8 @@ const ScreenShot: FC<ScreenShotProps> = ({
   const shotRef = useRef<Konva.Rect>(null);
   const shotTrRef = useRef<Konva.Transformer>(null);
 
-  const { pos, color, previewImage, onMouseMoveHandle } = useMousePreviewColor(
-    width,
-    height
-  );
+  const { pos, color, previewImage, onMouseMoveHandle } =
+    useMousePreviewColor();
   const {
     shotRect,
     figures,
@@ -88,8 +79,12 @@ const ScreenShot: FC<ScreenShotProps> = ({
     };
   }, [width, shotRect]);
 
-  const toolsRect = useMemo(() => {
-    if (!shotRect) return { x: 0, y: 0 };
+  const toolsRect = useMemo<{
+    x: number;
+    y: number;
+    position: 'top' | 'bottom';
+  }>(() => {
+    if (!shotRect) return { x: 0, y: 0, position: 'top' };
     const shotH = shotRect.height || 0;
     const shotW = shotRect.width || 0;
     const shotY = shotRect.y || 0;
@@ -134,20 +129,17 @@ const ScreenShot: FC<ScreenShotProps> = ({
    * 截图区域的鼠标拖动结束事件
    * @param e 鼠标事件对象
    */
-  const onRectDragEnd = useMemoizedFn(
-    (e: Konva.KonvaEventObject<MouseEvent>) => {
-      console.log(e);
-      updateShotRect({
-        x: shotRef.current?.x(),
-        y: shotRef.current?.y(),
-        width: shotRef.current?.width(),
-        height: shotRef.current?.height()
-      });
-      if (isDragMove) {
-        setIsDragMove(false);
-      }
+  const onRectDragEnd = useMemoizedFn(() => {
+    updateShotRect({
+      x: shotRef.current?.x(),
+      y: shotRef.current?.y(),
+      width: shotRef.current?.width(),
+      height: shotRef.current?.height()
+    });
+    if (isDragMove) {
+      setIsDragMove(false);
     }
-  );
+  });
 
   /**
    * 截图区域的拖动边界限制
@@ -217,196 +209,162 @@ const ScreenShot: FC<ScreenShotProps> = ({
   }, [shotRect]);
 
   useEffect(() => {
-    image.current.src = BgImage;
+    source.current.src = image;
     document.body.style.cursor = 'crosshair';
   }, []);
 
   return (
-    <div id='screenshot'>
-      <Stage width={width} height={height}>
-        <Layer>
-          <Image
-            image={image.current}
-            width={width}
-            height={height}
-            listening={false}
-          />
-        </Layer>
-        <Layer
-          draggable={false}
-          onMouseDown={onActionMouseDownHandler}
-          onMouseMove={onActionMouseMoveHandler}
-          onMouseUp={onActionMouseUpHandler}
-        >
-          <Rect
-            x={0}
-            y={0}
-            width={width}
-            height={height}
-            fill='rgba(0,0,0,0.5)'
-          />
-          {shotRect ? (
-            <Fragment>
-              <Rect
-                ref={shotRef}
-                width={shotRect.width}
-                height={shotRect.height}
-                x={shotRect.x}
-                y={shotRect.y}
-                fill='rgba(0,0,0,0.91)'
-                draggable={!currentAction}
-                cornerRadius={shotRadius}
-                shadowColor='#000'
-                shadowEnabled={showShadow}
-                onMouseEnter={() => {
-                  if (!currentAction && !figures?.length) {
-                    document.body.style.cursor = 'grab';
-                  }
-                  if (currentAction) {
-                    document.body.style.cursor = 'crosshair';
-                  }
-                }}
-                onMouseLeave={() => {
-                  if (!currentAction && !figures?.length) {
-                    document.body.style.cursor = 'default';
-                  }
-                  if (!currentAction && shotRect) {
-                    document.body.style.cursor = 'default';
-                  }
-                }}
-                onDragMove={onRectDragMove}
-                onDragEnd={onRectDragEnd}
-                dragBoundFunc={onRectDragBoundFunc}
-                globalCompositeOperation='destination-out'
-                onTransformStart={() => {
-                  setIsDragMove(true);
-                }}
-                onTransform={onRectTransformer}
-                onTransformEnd={onRectTransformEnd}
-              />
-              <Transformer
-                ref={shotTrRef}
-                resizeEnabled={true}
-                rotateEnabled={false}
-                anchorSize={6}
-                anchorFill={primaryColor}
-                anchorStroke={primaryColor}
-                anchorCornerRadius={0}
-                ignoreStroke={true}
-                borderStroke={primaryColor}
-                borderStrokeWidth={1}
-                centeredScaling={false}
-                keepRatio={false}
-                enabledAnchors={[
-                  'top-left',
-                  'top-right',
-                  'bottom-left',
-                  'bottom-right',
-                  'middle-left',
-                  'middle-right',
-                  'top-center',
-                  'bottom-center'
-                ]}
-              />
-            </Fragment>
-          ) : null}
-          <Group>
+    <ConfigProvider
+      componentSize='small'
+      theme={{
+        cssVar: true,
+        token: {
+          motion: false,
+          colorPrimary: primaryColor
+        },
+        components: {
+          Popover: {
+            colorBgElevated: 'rgba(255,255,255, 0.7)',
+            boxShadowSecondary: 'none'
+          },
+          Slider: {
+            boxShadow: 'none',
+            controlHeight:10
+          }
+        }
+      }}
+    >
+      <div id='screenshot' style={{ position: 'relative' }}>
+        <Stage width={width} height={height}>
+          <Layer>
+            <Image
+              image={source.current}
+              width={width}
+              height={height}
+              listening={false}
+            />
+          </Layer>
+          <Layer
+            draggable={false}
+            onMouseDown={onActionMouseDownHandler}
+            onMouseMove={onActionMouseMoveHandler}
+            onMouseUp={onActionMouseUpHandler}
+            onContextMenu={() => {}}
+          >
+            <Rect
+              x={0}
+              y={0}
+              width={width}
+              height={height}
+              fill='rgba(0,0,0,0.5)'
+            />
             {shotRect ? (
-              <Text
-                x={shotRect!.x}
-                y={shotRect!.y}
-                stroke='red'
-                height={120}
-                width={50}
-                text='123'
-                strokeWidth={1}
-              ></Text>
-            ) : null}
-
-            {(figures || []).map((figure, index) => {
-              if (figure.type === 'Rect') {
-                return (
-                  <Rect
-                    key={index}
-                    width={figure.width}
-                    height={figure.height}
-                    x={figure.x}
-                    y={figure.y}
-                    stroke={'red'}
-                    strokeWidth={2}
-                    onDragEnd={onRectDragEnd}
-                    dragBoundFunc={onRectDragBoundFunc}
-                  />
-                );
-              }
-              if (figure.type === 'Circle') {
-                return (
-                  <Circle
-                    key={index}
-                    radius={figure.radius}
-                    x={figure.x}
-                    y={figure.y}
-                    stroke={'red'}
-                    strokeWidth={2}
-                    onDragEnd={onRectDragEnd}
-                    dragBoundFunc={onRectDragBoundFunc}
-                  />
-                );
-              }
-              return (
+              <Fragment>
                 <Rect
-                  key={index}
-                  width={figure.width}
-                  height={figure.height}
-                  x={figure.x}
-                  y={figure.y}
-                  stroke={'red'}
-                  strokeWidth={2}
+                  ref={shotRef}
+                  width={shotRect.width}
+                  height={shotRect.height}
+                  x={shotRect.x}
+                  y={shotRect.y}
+                  fill='rgba(0,0,0,0.91)'
+                  draggable={!currentAction}
+                  cornerRadius={shotRadius}
+                  shadowColor='#000'
+                  shadowEnabled={showShadow}
+                  onMouseEnter={() => {
+                    if (!currentAction && !figures?.length) {
+                      document.body.style.cursor = 'grab';
+                    }
+                    if (currentAction) {
+                      document.body.style.cursor = 'crosshair';
+                    }
+                  }}
+                  onMouseLeave={() => {
+                    if (!currentAction && !figures?.length) {
+                      document.body.style.cursor = 'default';
+                    }
+                    if (!currentAction && shotRect) {
+                      document.body.style.cursor = 'default';
+                    }
+                  }}
+                  onDragMove={onRectDragMove}
                   onDragEnd={onRectDragEnd}
                   dragBoundFunc={onRectDragBoundFunc}
+                  globalCompositeOperation='destination-out'
+                  onTransformStart={() => {
+                    setIsDragMove(true);
+                  }}
+                  onTransform={onRectTransformer}
+                  onTransformEnd={onRectTransformEnd}
                 />
-              );
-            })}
-          </Group>
-          {previewImage && color && pos && !shotRect ? (
-            <ShotMousePreviewRect
-              pos={pos}
-              color={color}
-              image={previewImage}
-              primaryColor={primaryColor}
-            />
-          ) : null}
-        </Layer>
-      </Stage>
-      {!isDragMove && shotRect ? (
-        <ShotSizeContainer
-          windowWidth={width}
-          windowHeight={height}
-          width={shotRect.width || 0}
-          height={shotRect.height || 0}
-          x={sizeRect.x}
-          y={sizeRect.y}
-          radius={shotRadius}
-          shadow={showShadow}
-          onRectChange={(_w, _h) => {
-            updateShotRect({
-              ...shotRect,
-              width: _w,
-              height: _h
-            });
-          }}
-          onRadiusChange={setShotRadius}
-          onShadowChange={setShowShadow}
-        />
-      ) : null}
-      {!isDragMove && shotRect ? (
-        <ShotToolsContainer
-          x={toolsRect.x}
-          y={toolsRect.y}
-          onAction={setCurrentAction}
-        />
-      ) : null}
-    </div>
+                <Transformer
+                  ref={shotTrRef}
+                  resizeEnabled={true}
+                  rotateEnabled={false}
+                  anchorSize={6}
+                  anchorFill={primaryColor}
+                  anchorStroke={primaryColor}
+                  anchorCornerRadius={0}
+                  ignoreStroke={true}
+                  borderStroke={primaryColor}
+                  borderStrokeWidth={1}
+                  centeredScaling={false}
+                  keepRatio={false}
+                  enabledAnchors={[
+                    'top-left',
+                    'top-right',
+                    'bottom-left',
+                    'bottom-right',
+                    'middle-left',
+                    'middle-right',
+                    'top-center',
+                    'bottom-center'
+                  ]}
+                />
+              </Fragment>
+            ) : null}
+            <Shape list={figures || []} />
+            {previewImage && color && pos && !shotRect ? (
+              <ShotMousePreviewRect
+                pos={pos}
+                color={color}
+                image={previewImage}
+                primaryColor={primaryColor}
+              />
+            ) : null}
+          </Layer>
+        </Stage>
+        {!isDragMove && shotRect ? (
+          <ShotSizeContainer
+            windowWidth={width}
+            windowHeight={height}
+            width={shotRect.width || 0}
+            height={shotRect.height || 0}
+            x={sizeRect.x}
+            y={sizeRect.y}
+            radius={shotRadius}
+            shadow={showShadow}
+            onRectChange={(_w, _h) => {
+              updateShotRect({
+                ...shotRect,
+                width: _w,
+                height: _h
+              });
+            }}
+            onRadiusChange={setShotRadius}
+            onShadowChange={setShowShadow}
+          />
+        ) : null}
+        {!isDragMove && shotRect ? (
+          <ShotToolsContainer
+            x={toolsRect.x}
+            y={toolsRect.y}
+            position={toolsRect.position}
+            onAction={setCurrentAction}
+          />
+        ) : null}
+      </div>
+    </ConfigProvider>
   );
 };
 

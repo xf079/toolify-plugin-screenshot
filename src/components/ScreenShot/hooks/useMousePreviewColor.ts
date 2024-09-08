@@ -11,7 +11,7 @@ export interface IColorState {
   hex: string;
 }
 
-export const useMousePreviewColor = (width: number, height: number) => {
+export const useMousePreviewColor = () => {
   const [pos, setPos] = useState<Konva.Vector2d>();
   const [colorState, setColorState] = useState<IColorState>();
   const [imageData, setImageData] = useState<ImageData>();

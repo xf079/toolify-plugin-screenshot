@@ -1,5 +1,4 @@
-import { FC, FunctionComponent, SVGProps, useState } from 'react';
-import { Tooltip } from 'antd';
+import { IToolType } from './types';
 
 import RectIcon from './icon/rect-icon.svg?react';
 import LineIcon from './icon/line-icon.svg?react';
@@ -14,22 +13,7 @@ import CloseIcon from './icon/close-icon.svg?react';
 import DownloadIcon from './icon/download-icon.svg?react';
 import SuccessIcon from './icon/success-icon.svg?react';
 
-export interface ShotToolsContainerProps {
-  x: number;
-  y: number;
-  onAction: (name: string) => void;
-}
-
-export interface ToolsItem {
-  name: string;
-  icon: FunctionComponent<SVGProps<SVGSVGElement> & { title?: string }>;
-  title?: string;
-  isSelect?: boolean;
-  width: number;
-  height: number;
-}
-
-const tools: ToolsItem[] = [
+export const toolList: IToolType[] = [
   {
     name: 'Rect',
     icon: RectIcon,
@@ -46,7 +30,6 @@ const tools: ToolsItem[] = [
     width: 20,
     height: 20
   },
-
   {
     name: 'Line',
     icon: LineIcon,
@@ -119,34 +102,12 @@ const tools: ToolsItem[] = [
   }
 ];
 
-export const ShotToolsContainer: FC<ShotToolsContainerProps> = (props) => {
-  const [currentTool, setCurrentTool] = useState<ToolsItem>();
-  const onItemClick = (item: ToolsItem) => {
-    if (item.isSelect) {
-      setCurrentTool(item);
-    }
-    props.onAction(item.name);
-  };
-  return (
-    <div
-      className='shot-tools-container'
-      style={{ left: `${props.x}px`, top: `${props.y}px` }}
-    >
-      <div className='container'>
-        {tools.map((tool) => {
-          const IconComp = tool.icon;
-          return (
-            <Tooltip title={tool.title} key={tool.name}>
-              <div
-                className={`btn-item ${currentTool === tool ? 'active' : ''}`}
-                onClick={() => onItemClick(tool)}
-              >
-                <IconComp width={tool.width} height={tool.height} />
-              </div>
-            </Tooltip>
-          );
-        })}
-      </div>
-    </div>
-  );
-};
+export const customColorList = [
+  '#f5222d',
+  '#fa541c',
+  '#fa8c16',
+  '#52c41a',
+  '#13c2c2',
+  '#2f54eb',
+  '#722ed1',
+];

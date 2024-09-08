@@ -3,8 +3,8 @@ import Konva from 'konva';
 import { Image, Line, Rect, Text } from 'react-konva';
 import useImage from 'use-image';
 import { useMemoizedFn } from 'ahooks';
-import { THUMBNAIL_IMAGE_SIZE } from './constants';
-import { IColorState } from './hooks/useMousePreviewColor';
+import { THUMBNAIL_IMAGE_SIZE } from '../constants.ts';
+import { IColorState } from '../hooks/useMousePreviewColor.ts';
 
 export interface ShotMousePreviewRectProps {
   primaryColor: string;
