@@ -1,11 +1,22 @@
+import { FC, memo } from 'react';
 import { Checkbox, ColorPicker, Flex, Slider, Typography } from 'antd';
-import { customColorList } from '../../config.ts';
-import { useState } from 'react';
+import { useControllableValue } from 'ahooks';
+import { circleDefaultOptions, ToolColorList } from '../../config';
+import { IOptionsType } from '../../types';
 
-export const CircleOptions = () => {
-  const [size, setSize] = useState(1);
-  const [opacity, setOpacity] = useState(1);
-  const [color, setColor] = useState('#e12160');
+export interface ICircleOptions {
+  options?: IOptionsType;
+  defaultOptions?: IOptionsType;
+  onUpdateOptions: (options: IOptionsType) => void;
+}
+
+export const CircleOptions: FC<ICircleOptions> = memo((props) => {
+  const [state, updateState] = useControllableValue(props, {
+    defaultValue: circleDefaultOptions,
+    defaultValuePropName: 'defaultOptions',
+    valuePropName: 'options',
+    trigger: 'onUpdateOptions'
+  });
 
   return (
     <Flex gap={12}>
@@ -16,8 +27,10 @@ export const CircleOptions = () => {
             min={1}
             max={40}
             defaultValue={1}
-            value={size}
-            onChange={(value) => setSize(value)}
+            value={state.size}
+            onChange={(value) => {
+              updateState({ ...state, size: value });
+            }}
             style={{ width: 80 }}
           />
         </Flex>
@@ -27,17 +40,16 @@ export const CircleOptions = () => {
             min={0}
             max={100}
             defaultValue={1}
-            value={opacity * 100}
-            onChange={(value) => setOpacity(value / 100)}
+            value={state.opacity * 100}
+            onChange={(value) => {
+              updateState({ ...state, opacity: value / 100 });
+            }}
             style={{ width: 80 }}
           />
         </Flex>
       </Flex>
-      <Flex vertical>
-        <Checkbox>空心</Checkbox>
-      </Flex>
       <Flex wrap justify='start' align='center' gap={8} style={{ width: 90 }}>
-        {customColorList.map((val) => (
+        {ToolColorList.map((val) => (
           <a
             key={val}
             className='color-item'
@@ -45,16 +57,28 @@ export const CircleOptions = () => {
           />
         ))}
         <ColorPicker
-          value={color}
+          value={state.color}
           disabledAlpha
-          onChange={(value, hex) => {
-            console.log(value, hex);
-            setColor(hex);
+          onChange={(value) => {
+            updateState({ ...state, color: `#${value.toHex()}` });
           }}
         >
-          <a className='color-item' style={{ backgroundColor: color }}></a>
+          <a
+            className='color-item'
+            style={{ backgroundColor: state.color }}
+          ></a>
         </ColorPicker>
+      </Flex>
+      <Flex vertical>
+        <Checkbox
+          checked={state.full}
+          onChange={(e) => {
+            updateState({ ...state, full: e.target.checked });
+          }}
+        >
+          空心
+        </Checkbox>
       </Flex>
     </Flex>
   );
-};
+});

@@ -1,10 +1,12 @@
 import { FC, Fragment, useState } from 'react';
-import { ColorPicker, Flex, Popover, Slider, Tooltip, Typography } from 'antd';
+import { Flex, Popover, Tooltip } from 'antd';
 import { createStyles } from 'antd-style';
-import { customColorList, toolList } from '../config';
-import { IToolType } from '../types';
-import { RectOptions } from './options/RectOptions.tsx';
-import { CircleOptions } from './options/CircleOptions.tsx';
+import { ToolIconList, ToolList } from '../config';
+import { RectOptions } from './options/RectOptions';
+import { CircleOptions } from './options/CircleOptions';
+
+import type { IOptionsType, ISelectToolType, IToolType } from '../types';
+import { useLocalStorageState } from 'ahooks';
 
 export interface ShotToolsContainerProps {
   x: number;
@@ -61,17 +63,39 @@ const useStyles = createStyles(({ token, css }) => ({
 
 export const ShotToolsContainer: FC<ShotToolsContainerProps> = (props) => {
   const { styles, cx } = useStyles();
-  const [currentTool, setCurrentTool] = useState<IToolType>();
-  const [color, setColor] = useState<string>('#e12160');
-  const [size, setSize] = useState(1);
-  const [opacity, setOpacity] = useState(1);
+  const [toolList, updateToolList] = useLocalStorageState('local-tools', {
+    defaultValue: ToolList,
+    listenStorageChange: true,
+  });
+  const [currentTool, setCurrentTool] = useState<ISelectToolType>();
 
   const onItemClick = (item: IToolType) => {
-    if (item.isSelect) {
-      setCurrentTool(item);
+    if (item.action) {
+      setCurrentTool({
+        name: item.name,
+        options: item.options
+      });
     }
     props.onAction(item.name);
   };
+
+  const onOptionsUpdate = (options: IOptionsType) => {
+    if (currentTool) {
+      setCurrentTool({
+        ...currentTool,
+        options
+      });
+      updateToolList((prevState) => {
+        if (!prevState) return prevState;
+        const index = prevState.findIndex(
+          (tool) => tool.name === currentTool.name
+        );
+      });
+    }
+  };
+
+  console.log(toolList);
+
   return (
     <Flex
       className={styles.container}
@@ -80,17 +104,27 @@ export const ShotToolsContainer: FC<ShotToolsContainerProps> = (props) => {
       gap={6}
       style={{ left: `${props.x}px`, top: `${props.y}px` }}
     >
-      {toolList.map((tool) => {
-        const IconComp = tool.icon;
-        if (tool.isSelect) {
+      {(toolList || []).map((tool) => {
+        const Icon = ToolIconList[tool.name];
+        if (tool.action) {
           return (
             <Popover
               key={tool.name}
               overlayClassName={styles.popover}
               content={
                 <Fragment>
-                  {tool.name === 'Rect' && <RectOptions />}
-                  {tool.name === 'Circle' && <CircleOptions />}
+                  {tool.name === 'Rect' && (
+                    <RectOptions
+                      options={tool.options}
+                      onUpdateOptions={onOptionsUpdate}
+                    />
+                  )}
+                  {tool.name === 'Circle' && (
+                    <CircleOptions
+                      options={tool.options}
+                      onUpdateOptions={onOptionsUpdate}
+                    />
+                  )}
                 </Fragment>
               }
               placement={(props.position + 'Left') as never}
@@ -105,7 +139,7 @@ export const ShotToolsContainer: FC<ShotToolsContainerProps> = (props) => {
                   )}
                   onClick={() => onItemClick(tool)}
                 >
-                  <IconComp width={tool.width} height={tool.height} />
+                  <Icon width={tool.width} height={tool.height} />
                 </div>
               </Tooltip>
             </Popover>
@@ -117,7 +151,7 @@ export const ShotToolsContainer: FC<ShotToolsContainerProps> = (props) => {
             className={styles.item}
             onClick={() => onItemClick(tool)}
           >
-            <IconComp width={tool.width} height={tool.height} />
+            <Icon width={tool.width} height={tool.height} />
           </div>
         );
       })}
