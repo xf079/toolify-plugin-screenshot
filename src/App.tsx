@@ -1,4 +1,4 @@
-import { ScreenShot } from './components/ScreenShot';
+import { ScreenShot } from './screen-shot';
 import BgImage from './assets/bg2.webp';
 
 const App = () => {

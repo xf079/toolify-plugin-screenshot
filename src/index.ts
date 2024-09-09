@@ -1,3 +1,3 @@
-import { ScreenShot } from './components/ScreenShot';
+import { ScreenShot } from './screen-shot';
 
 export { ScreenShot };

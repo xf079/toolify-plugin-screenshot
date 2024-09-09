@@ -8,12 +8,12 @@ import {
   SHOT_TOOLBAR_MODAL_HEIGHT,
   SHOT_TOOLBAR_SPLIT,
   SHOT_TOOLBAR_WIDTH
-} from './constants';
-import { useMouseActon } from './hooks/useMouseActon';
-import { useMousePreviewColor } from './hooks/useMousePreviewColor';
-import { ShotMousePreviewRect } from './components/ShotMousePreviewRect';
-import { ShotSizeContainer } from './components/ShotSizeContainer';
-import { ShotToolsContainer } from './components/ShotToolsContainer';
+} from './constants.ts';
+import { useMouseActon } from './hooks/useMouseActon.ts';
+import { useMousePreviewColor } from './hooks/useMousePreviewColor.ts';
+import { ShotMousePreviewRect } from './components/ShotMousePreviewRect.tsx';
+import { ShotSizeContainer } from './components/ShotSizeContainer.tsx';
+import { ShotToolsContainer } from './components/ShotToolsContainer.tsx';
 import { Shape } from './components/shape';
 
 export interface ScreenShotProps {
@@ -30,6 +30,7 @@ const ScreenShot: FC<ScreenShotProps> = ({
   primaryColor = '#4096ff'
 }) => {
   const source = useRef(new window.Image());
+  const [ready, setReady] = useState(false);
   // 是否正在拖动截图区域
   const [isDragMove, setIsDragMove] = useState(false);
 
@@ -210,6 +211,9 @@ const ScreenShot: FC<ScreenShotProps> = ({
 
   useEffect(() => {
     source.current.src = image;
+    source.current.onload = () => {
+      setReady(true);
+    };
     document.body.style.cursor = 'crosshair';
   }, []);
 
@@ -218,18 +222,15 @@ const ScreenShot: FC<ScreenShotProps> = ({
       componentSize='small'
       theme={{
         cssVar: true,
+        hashed: false,
         token: {
           motion: false,
           colorPrimary: primaryColor
         },
         components: {
-          Popover: {
-            colorBgElevated: 'rgba(255,255,255, 0.7)',
-            boxShadowSecondary: 'none'
-          },
           Slider: {
             boxShadow: 'none',
-            controlHeight:10
+            controlHeight: 10
           }
         }
       }}
@@ -237,12 +238,14 @@ const ScreenShot: FC<ScreenShotProps> = ({
       <div id='screenshot' style={{ position: 'relative' }}>
         <Stage width={width} height={height}>
           <Layer>
-            <Image
-              image={source.current}
-              width={width}
-              height={height}
-              listening={false}
-            />
+            {ready && (
+              <Image
+                image={source.current}
+                width={width}
+                height={height}
+                listening={false}
+              />
+            )}
           </Layer>
           <Layer
             draggable={false}

@@ -1,7 +1,7 @@
 import Konva from 'konva';
 import { useMemo, useRef, useState } from 'react';
 import { useMemoizedFn } from 'ahooks';
-import { SHOT_MIN_SIZE } from '../constants';
+import { SHOT_MIN_SIZE } from '../constants.ts';
 
 export interface IActionHandleOptions {
   action?: string;

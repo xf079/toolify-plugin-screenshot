@@ -1,5 +1,5 @@
 import './ScreenShot.less'
 
-import ScreenShot from './ScreenShot';
+import ScreenShot from './ScreenShot.tsx';
 
 export { ScreenShot };

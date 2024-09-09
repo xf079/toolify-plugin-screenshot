@@ -1,7 +1,7 @@
 import Konva from 'konva';
 import { useMemo, useState } from 'react';
-import { rgbToHex } from '../utils';
-import { THUMBNAIL_SIZE } from '../constants';
+import { rgbToHex } from '../utils.ts';
+import { THUMBNAIL_SIZE } from '../constants.ts';
 
 export interface IColorState {
   r: number;
