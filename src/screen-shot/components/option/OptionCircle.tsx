@@ -2,15 +2,14 @@ import { FC, memo } from 'react';
 import { Checkbox, ColorPicker, Flex, Slider, Typography } from 'antd';
 import { useControllableValue } from 'ahooks';
 import { circleDefaultOptions, ToolColorList } from '../../config';
-import { IOptionsType } from '../../types';
 
 export interface ICircleOptions {
-  options?: IOptionsType;
-  defaultOptions?: IOptionsType;
-  onUpdateOptions: (options: IOptionsType) => void;
+  options?: IShapeOption;
+  defaultOptions?: IShapeOption;
+  onUpdateOptions: (options: IShapeOption) => void;
 }
 
-export const CircleOptions: FC<ICircleOptions> = memo((props) => {
+export const OptionCircle: FC<ICircleOptions> = memo((props) => {
   const [state, updateState] = useControllableValue(props, {
     defaultValue: circleDefaultOptions,
     defaultValuePropName: 'defaultOptions',
@@ -40,7 +39,7 @@ export const CircleOptions: FC<ICircleOptions> = memo((props) => {
             min={0}
             max={100}
             defaultValue={1}
-            value={state.opacity * 100}
+            value={(state.opacity || 0) * 100}
             onChange={(value) => {
               updateState({ ...state, opacity: value / 100 });
             }}

@@ -1,34 +1,16 @@
 import { FC, Fragment, useState } from 'react';
 import { Flex, Popover, Tooltip } from 'antd';
+import { useLocalStorageState, useMemoizedFn } from 'ahooks';
 import { createStyles } from 'antd-style';
-import { ToolIconList, ToolList } from '../config';
-import { RectOptions } from './options/RectOptions';
-import { CircleOptions } from './options/CircleOptions';
-
-import type { IOptionsType, ISelectToolType, IToolType } from '../types';
-import { useLocalStorageState } from 'ahooks';
-
-export interface ShotToolsContainerProps {
-  x: number;
-  y: number;
-  position: 'top' | 'bottom';
-  onAction: (name: string) => void;
-}
+import { ToolList, ToolSimpleList } from '../config';
+import { OptionRect, OptionCircle } from './option';
+import { ToolIconList } from '../icon';
 
 const useStyles = createStyles(({ token, css }) => ({
-  wrapper: css`
-    position: absolute;
-    z-index: 999;
-    height: 38px;
-    border-radius: 5px;
-    background-color: rgba(255, 255, 255, 0.7);
-    backdrop-filter: blur(10px);
-  `,
   container: css`
     position: absolute;
     z-index: 999;
     height: 38px;
-    display: flex;
     padding: 0 4px;
     border-radius: 5px;
     background-color: rgba(255, 255, 255, 0.7);
@@ -37,9 +19,6 @@ const useStyles = createStyles(({ token, css }) => ({
   item: css`
     width: 32px;
     height: 32px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
     cursor: pointer;
     transition: all 0.2s;
     border-radius: 5px;
@@ -52,7 +31,6 @@ const useStyles = createStyles(({ token, css }) => ({
     background-color: rgba(0, 0, 0, 0.1);
     color: ${token.colorPrimary};
   `,
-
   popover: css`
     --ant-color-bg-elevated: rgba(255, 255, 255, 0.7);
     .ant-popover-inner {
@@ -61,40 +39,61 @@ const useStyles = createStyles(({ token, css }) => ({
   `
 }));
 
+export interface ShotToolsContainerProps {
+  options?: Record<IOptionActionKey, IShapeOption>;
+  x: number;
+  y: number;
+  position: 'top' | 'bottom';
+  onAction: (action: ISelectToolOptionType) => void;
+}
+
 export const ShotToolsContainer: FC<ShotToolsContainerProps> = (props) => {
   const { styles, cx } = useStyles();
-  const [toolList, updateToolList] = useLocalStorageState('local-tools', {
-    defaultValue: ToolList,
-    listenStorageChange: true,
+
+  const [tools, updateTools] = useLocalStorageState('local-tools', {
+    defaultValue: ToolList.map((item) => ({
+      ...item,
+      options: Object.assign({}, item.options, {})
+    })),
+    listenStorageChange: true
   });
-  const [currentTool, setCurrentTool] = useState<ISelectToolType>();
+  const [current, setCurrent] = useState<ISelectToolOptionType>();
 
-  const onItemClick = (item: IToolType) => {
-    if (item.action) {
-      setCurrentTool({
-        name: item.name,
-        options: item.options
-      });
-    }
-    props.onAction(item.name);
+  const onItemOptionAction = (item: IToolType) => {
+    setCurrent({
+      type: item.type,
+      options: item.options
+    });
+    props.onAction({
+      type: item.type,
+      options: item.options
+    });
   };
 
-  const onOptionsUpdate = (options: IOptionsType) => {
-    if (currentTool) {
-      setCurrentTool({
-        ...currentTool,
-        options
-      });
-      updateToolList((prevState) => {
-        if (!prevState) return prevState;
-        const index = prevState.findIndex(
-          (tool) => tool.name === currentTool.name
+  const onItemAction = (item: IToolSimpleType) => {
+    props.onAction({
+      type: item.type
+    });
+  };
+
+  const onOptionsUpdate = useMemoizedFn((options: IShapeOption) => {
+    if (current) {
+      setCurrent({ ...current, options });
+      if (tools) {
+        updateTools(
+          tools.map((item) => {
+            if (item.type === current.type) {
+              return {
+                ...item,
+                options
+              };
+            }
+            return item;
+          })
         );
-      });
+      }
     }
-  };
-
-  console.log(toolList);
+  });
 
   return (
     <Flex
@@ -104,55 +103,60 @@ export const ShotToolsContainer: FC<ShotToolsContainerProps> = (props) => {
       gap={6}
       style={{ left: `${props.x}px`, top: `${props.y}px` }}
     >
-      {(toolList || []).map((tool) => {
-        const Icon = ToolIconList[tool.name];
-        if (tool.action) {
-          return (
-            <Popover
-              key={tool.name}
-              overlayClassName={styles.popover}
-              content={
-                <Fragment>
-                  {tool.name === 'Rect' && (
-                    <RectOptions
-                      options={tool.options}
-                      onUpdateOptions={onOptionsUpdate}
-                    />
-                  )}
-                  {tool.name === 'Circle' && (
-                    <CircleOptions
-                      options={tool.options}
-                      onUpdateOptions={onOptionsUpdate}
-                    />
-                  )}
-                </Fragment>
-              }
-              placement={(props.position + 'Left') as never}
-              open={currentTool?.name === tool.name}
-              trigger='click'
-            >
-              <Tooltip title={tool.title}>
-                <div
-                  className={cx(
-                    styles.item,
-                    currentTool === tool && styles.active
-                  )}
-                  onClick={() => onItemClick(tool)}
-                >
-                  <Icon width={tool.width} height={tool.height} />
-                </div>
-              </Tooltip>
-            </Popover>
-          );
-        }
+      {(tools || []).map((tool) => {
+        const Icon = ToolIconList[tool.type];
         return (
-          <div
-            key={tool.name}
+          <Popover
+            key={tool.type}
+            overlayClassName={styles.popover}
+            content={
+              <Fragment>
+                {tool.type === 'Rect' && (
+                  <OptionRect
+                    options={tool.options}
+                    onUpdateOptions={onOptionsUpdate}
+                  />
+                )}
+                {tool.type === 'Circle' && (
+                  <OptionCircle
+                    options={tool.options}
+                    onUpdateOptions={onOptionsUpdate}
+                  />
+                )}
+              </Fragment>
+            }
+            placement={(props.position + 'Left') as never}
+            open={current?.type === tool.type}
+            trigger='click'
+          >
+            <Tooltip title={tool.title}>
+              <Flex
+                className={cx(
+                  styles.item,
+                  current?.type === tool.type && styles.active
+                )}
+                justify='center'
+                align='center'
+                onClick={() => onItemOptionAction(tool)}
+              >
+                <Icon width={tool.width} height={tool.height} />
+              </Flex>
+            </Tooltip>
+          </Popover>
+        );
+      })}
+      {ToolSimpleList.map((tool) => {
+        const Icon = ToolIconList[tool.type];
+        return (
+          <Flex
+            key={tool.type}
             className={styles.item}
-            onClick={() => onItemClick(tool)}
+            justify='center'
+            align='center'
+            onClick={() => onItemAction(tool)}
           >
             <Icon width={tool.width} height={tool.height} />
-          </div>
+          </Flex>
         );
       })}
     </Flex>

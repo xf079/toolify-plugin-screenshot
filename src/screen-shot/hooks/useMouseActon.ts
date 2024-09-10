@@ -4,14 +4,10 @@ import { useMemoizedFn } from 'ahooks';
 import { SHOT_MIN_SIZE } from '../constants.ts';
 
 export interface IActionHandleOptions {
-  action?: string;
+  action?: ISelectToolOptionType;
   onMouseDownCallback?: (e: Konva.KonvaEventObject<MouseEvent>) => void;
   onMouseMoveCallback?: (e: Konva.KonvaEventObject<MouseEvent>) => void;
   onMouseUpCallback?: (e: Konva.KonvaEventObject<MouseEvent>) => void;
-}
-
-interface IShape extends Konva.NodeConfig {
-  type: string;
 }
 
 export const useMouseActon = (options: IActionHandleOptions) => {
@@ -25,10 +21,10 @@ export const useMouseActon = (options: IActionHandleOptions) => {
   const mode = useRef<'shot' | 'figure' | undefined>();
   // 截图区域
   const [shotRect, updateShotRect] = useState<Konva.NodeConfig>();
-  const [list, setList] = useState<IShape[]>([]);
-  const [current, setCurrent] = useState<IShape>();
+  const [list, setList] = useState<IShapeType[]>([]);
+  const [current, setCurrent] = useState<IShapeType>();
 
-  const figures = useMemo<IShape[]>(
+  const shapes = useMemo<IShapeType[]>(
     () => (current ? [...list, current] : list),
     [list, current]
   );
@@ -57,59 +53,13 @@ export const useMouseActon = (options: IActionHandleOptions) => {
             x <= rectX! + width! &&
             y >= rectY! &&
             y <= rectY! + height!
+            && options.action
           ) {
             isDrawing.current = true;
             // 点击在截图区域内
             mode.current = 'figure';
             start.current = { x: e.evt.layerX, y: e.evt.layerY };
-            switch (options.action) {
-              case 'Rect':
-                setCurrent({
-                  type: 'Rect',
-                  ...start.current,
-                  width: 0,
-                  height: 0
-                });
-                break;
-              case 'Circle':
-                setCurrent({
-                  type: 'Circle',
-                  ...start.current
-                });
-                break;
-              case 'Line':
-                setCurrent({
-                  type: 'Line',
-                  points: [start.current.x, start.current.y]
-                });
-                break;
-              case 'Arrow':
-                setCurrent({
-                  type: 'Arrow',
-                  points: [start.current.x, start.current.y]
-                });
-                break;
-              case 'Pencil':
-                setCurrent({
-                  type: 'Pencil',
-                  ...start.current
-                });
-                break;
-              case 'Mosaic':
-                setCurrent({
-                  type: 'Mosaic',
-                  ...start.current
-                });
-                break;
-              case 'Text':
-                setCurrent({
-                  type: 'Text',
-                  ...start.current
-                });
-                break;
-              default:
-                break;
-            }
+            setCurrent({ ...options.action, ...start.current });
           }
         }
       } else {
@@ -136,63 +86,8 @@ export const useMouseActon = (options: IActionHandleOptions) => {
         } else if (mode.current === 'figure') {
           const endX = e.evt.layerX;
           const endY = e.evt.layerY;
-          const width = Math.abs(endX - start.current.x);
-          const height = Math.abs(endY - start.current.y);
-          switch (options.action) {
-            case 'Rect':
-              setCurrent({
-                type: 'Rect',
-                x: Math.min(start.current.x, endX),
-                y: Math.min(start.current.y, endY),
-                width,
-                height
-              });
-              break;
-            case 'Circle':
-              setCurrent({
-                type: 'Circle',
-                x: Math.min(start.current.x, endX),
-                y: Math.min(start.current.y, endY),
-                width,
-                height
-              });
-              break;
-            case 'Line':
-              setCurrent({
-                type: 'Line',
-                points: [current!.points[0], current!.points[1], endX, endY],
-                width,
-                height
-              });
-              break;
-            case 'Arrow':
-              setCurrent({
-                type: 'Arrow',
-                points: [current!.points[0], current!.points[1], endX, endY],
-                width,
-                height
-              });
-              break;
-            case 'Pencil':
-              setCurrent({
-                type: 'Pencil',
-                x: Math.min(start.current.x, endX),
-                y: Math.min(start.current.y, endY),
-                width,
-                height
-              });
-              break;
-            case 'Mosaic':
-              setCurrent({
-                type: 'Mosaic',
-                x: Math.min(start.current.x, endX),
-                y: Math.min(start.current.y, endY),
-                width,
-                height
-              });
-              break;
-            default:
-              break;
+          if(current){
+            setCurrent({ ...current, endX, endY });
           }
         }
       }
@@ -201,6 +96,7 @@ export const useMouseActon = (options: IActionHandleOptions) => {
 
   const onActionMouseUpHandler = useMemoizedFn(
     (e: Konva.KonvaEventObject<MouseEvent>) => {
+      console.log('out');
       options?.onMouseUpCallback?.(e);
       if (isDrawing.current) {
         isDrawing.current = false;
@@ -226,7 +122,7 @@ export const useMouseActon = (options: IActionHandleOptions) => {
   return {
     isDrawing,
     shotRect,
-    figures,
+    shapes,
     updateShotRect,
     onActionMouseDownHandler,
     onActionMouseMoveHandler,

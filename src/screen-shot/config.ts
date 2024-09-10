@@ -1,19 +1,3 @@
-import { IToolType } from './types';
-import {
-  CircleIcon,
-  RectIcon,
-  LineIcon,
-  ArrowTopRightIcon,
-  EditIcon,
-  MosaicIcon,
-  TextIcon,
-  PinnedIcon,
-  RefreshIcon,
-  CloseIcon,
-  DownloadIcon,
-  SuccessIcon
-} from './icon';
-
 export const ToolColorList = [
   '#f5222d',
   '#fa541c',
@@ -24,113 +8,114 @@ export const ToolColorList = [
   '#722ed1'
 ];
 
-
-export const ToolIconList:Record<any, any> = {
-  Rect: RectIcon,
-  Circle: CircleIcon,
-  Line: LineIcon,
-  Arrow: ArrowTopRightIcon,
-  Pencil: EditIcon,
-  Mosaic: MosaicIcon,
-  Text: TextIcon,
-  Pinned: PinnedIcon,
-  Refresh: RefreshIcon,
-  Close: CloseIcon,
-  Download: DownloadIcon,
-  Success: SuccessIcon
-}
-
-
-export const rectDefaultOptions = {
+export const rectDefaultOptions: IShapeOption = {
   size: 5,
   opacity: 1,
   color: ToolColorList[0],
   full: false,
   radius: false
-}
+};
 
-export const circleDefaultOptions = {
+export const circleDefaultOptions: IShapeOption = {
   size: 5,
   opacity: 1,
   color: ToolColorList[0],
   full: false
-}
+};
 
+export const lineDefaultOptions: IShapeOption = {
+  size: 1,
+  opacity: 1,
+  color: ToolColorList[0]
+};
 
+export const arrowDefaultOptions: IShapeOption = {
+  size: 1,
+  opacity: 1,
+  color: ToolColorList[0]
+};
+
+/**
+ * 操作选项工具栏
+ */
 export const ToolList: IToolType[] = [
   {
-    name: 'Rect',
+    type: 'Rect',
     title: '矩形',
-    action: true,
     width: 20,
     height: 20,
     options: rectDefaultOptions
   },
   {
-    name: 'Circle',
+    type: 'Circle',
     title: '圆形',
-    action: true,
     width: 20,
     height: 20,
     options: circleDefaultOptions
   },
   {
-    name: 'Line',
+    type: 'Line',
     title: '直线',
-    action: true,
     width: 16,
-    height: 16
+    height: 16,
+    options: lineDefaultOptions
   },
   {
-    name: 'Arrow',
+    type: 'Arrow',
     title: '箭头',
-    action: true,
     width: 20,
-    height: 20
+    height: 20,
+    options: arrowDefaultOptions
   },
   {
-    name: 'Pencil',
+    type: 'Pencil',
     title: '铅笔',
-    action: true,
     width: 16,
-    height: 16
+    height: 16,
+    options: arrowDefaultOptions
   },
   {
-    name: 'Mosaic',
+    type: 'Mosaic',
     title: '马赛克',
-    action: true,
     width: 16,
-    height: 16
+    height: 16,
+    options: arrowDefaultOptions
   },
   {
-    name: 'Text',
+    type: 'Text',
     title: '文本',
-    action: true,
     width: 18,
-    height: 18
-  },
+    height: 18,
+    options: arrowDefaultOptions
+  }
+];
+
+/**
+ * 单操作工具栏
+ */
+export const ToolSimpleList: IToolSimpleType[] = [
   {
-    name: 'Pinned',
+    type: 'Pinned',
     width: 16,
     height: 16
   },
   {
-    name: 'Refresh',
+    type: 'Refresh',
     width: 20,
     height: 20
   },
   {
-    name: 'Close',
+    type: 'Close',
     width: 20,
     height: 20
   },
   {
-    name: 'Download',
+    type: 'Download',
     width: 18,
     height: 18
   },
   {
-    name: 'Success',
+    type: 'Success',
     width: 20,
     height: 20
   }

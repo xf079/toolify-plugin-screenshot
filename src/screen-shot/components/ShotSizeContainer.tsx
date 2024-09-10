@@ -1,5 +1,37 @@
 import { FC } from 'react';
 import { Checkbox, Flex, Input, Slider } from 'antd';
+import { createStyles } from 'antd-style';
+
+const useStyles = createStyles(({ css }) => ({
+  container: css`
+    position: absolute;
+    border-radius: 5px;
+    background-color: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(10px);
+    z-index: 999;
+    height: 28px;
+    gap: 12px;
+    padding: 0 12px;
+  `,
+  rect: css`
+    font-size: 14px;
+    font-weight: 300;
+    color: #000;
+    gap: 8px;
+  `,
+  field: css`
+    font-size: 12px;
+    font-weight: 400;
+    color: #333;
+    width: 50px;
+    height: 22px;
+    text-align: center;
+    background: rgba(0, 0, 0, 0.1);
+    border: none;
+    outline: none;
+    border-radius: 5px;
+  `
+}));
 
 export interface ShotSizeContainerProps {
   windowWidth: number;
@@ -27,14 +59,15 @@ export const ShotSizeContainer: FC<ShotSizeContainerProps> = ({
   onRadiusChange,
   onShadowChange
 }) => {
+  const { styles } = useStyles();
   return (
     <Flex
-      className='shot-size-container'
+      className={styles.container}
       align='center'
       justify='start'
       style={{ top: y, left: x }}
     >
-      <Flex className='shot-rect' gap={8}>
+      <Flex className={styles.rect} gap={8}>
         <Input
           placeholder='Filled'
           size='small'

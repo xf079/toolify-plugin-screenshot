@@ -1,6 +1,4 @@
-import Konva from 'konva';
-
-interface IOptionsType {
+interface IShapeOption {
   size?: number;
   opacity?: number;
   color?: string;
@@ -8,20 +6,49 @@ interface IOptionsType {
   radius?: boolean;
 }
 
+type IOptionActionKey =
+  | 'Rect'
+  | 'Circle'
+  | 'Line'
+  | 'Arrow'
+  | 'Pencil'
+  | 'Mosaic'
+  | 'Text';
+
+type IOptionsKeyType =
+  | IOptionActionKey
+  | 'Pinned'
+  | 'Refresh'
+  | 'Close'
+  | 'Download'
+  | 'Success';
+
 interface IToolType {
-  name: string;
+  type: IOptionActionKey;
   title?: string;
-  action?: boolean;
   width: number;
   height: number;
-  options?: IOptionsType;
+  options?: IShapeOption;
 }
 
-interface ISelectToolType {
-  name: string;
-  options?: IOptionsType;
+interface IToolSimpleType {
+  type: IOptionsKeyType;
+  width: number;
+  height: number;
 }
 
-export interface IShape extends Konva.NodeConfig {
-  type: string;
+type IToolOptionsType = Record<IOptionActionKey, IShapeOption>;
+
+interface ISelectToolOptionType {
+  type: IOptionsKeyType;
+  options?: IOptionShape;
+}
+
+interface IShapeType {
+  type: IOptionsKeyType;
+  options?: IShapeOption;
+  x?: number;
+  y?: number;
+  endX?: number;
+  endY?: number;
 }

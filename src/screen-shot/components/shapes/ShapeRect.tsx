@@ -1,23 +1,32 @@
-import { FC, Fragment, useEffect, useRef, useState } from 'react';
-import { Rect, Transformer } from 'react-konva';
 import Konva from 'konva';
+import { Rect, Transformer } from 'react-konva';
+import { FC, Fragment, useEffect, useMemo, useRef, useState } from 'react';
 
 export interface IShapeRectProps {
-  shapeProps: Konva.LineConfig;
+  shape: IShapeType;
 }
 
-export const ShapeRect: FC<IShapeRectProps> = ({ shapeProps }) => {
-  console.log(shapeProps);
+export const ShapeRect: FC<IShapeRectProps> = ({ shape }) => {
   const shapeRef = useRef<Konva.Rect>(null);
   const shapeTrRef = useRef<Konva.Transformer>(null);
-
   const [isSelect, setIsSelect] = useState(false);
 
-  const onArronTap = (e:Konva.KonvaEventObject<MouseEvent>) => {
-    console.log(e);
+  const onArronTap = () => {
     setIsSelect(true);
   };
 
+  const state = useMemo(() => {
+    const minX = Math.min(shape?.x || 0, shape.endX || 0);
+    const minY = Math.min(shape?.y || 0, shape.endY || 0);
+    const maxX = Math.max(shape?.x || 0, shape.endX || 0);
+    const maxY = Math.max(shape?.y || 0, shape.endY || 0);
+    return {
+      x: minX,
+      y: minY,
+      width: maxX - minX,
+      height: maxY - minY
+    };
+  }, [shape]);
 
   // const isBorderHit = (ctx: Context, shape: Konva.Shape) => {
   //   console.log(ctx,shape);
@@ -35,21 +44,18 @@ export const ShapeRect: FC<IShapeRectProps> = ({ shapeProps }) => {
     <Fragment>
       <Rect
         ref={shapeRef}
-        stroke={'red'}
-        strokeWidth={19}
-        pointerWidth={20}
-        pointerLength={20}
-        {...shapeProps}
+        stroke={shape.options?.color}
+        strokeWidth={shape.options?.size}
+        fill={shape.options?.full ? shape.options?.color : 'transparent'}
+        opacity={shape.options?.opacity}
+        cornerRadius={shape.options?.radius ? 5 : 0}
+        x={state.x}
+        y={state.y}
+        width={state.width}
+        height={state.height}
         onClick={onArronTap}
         onTap={onArronTap}
         draggable
-        onMouseMove={(e) => {
-          console.log('okk',e);
-          document.body.style.cursor = 'move';
-        }}
-        onMouseLeave={() => {
-          document.body.style.cursor = 'default';
-        }}
       />
       {isSelect && (
         <Transformer
@@ -57,13 +63,11 @@ export const ShapeRect: FC<IShapeRectProps> = ({ shapeProps }) => {
           flipEnabled={false}
           resizeEnabled={true}
           rotateEnabled={false}
-          anchorSize={6}
-          anchorFill='red'
-          anchorStroke='red'
-          anchorCornerRadius={0}
+          anchorSize={8}
+          anchorStroke='#fff'
+          anchorCornerRadius={4}
+          borderEnabled={false}
           ignoreStroke={true}
-          borderStroke='red'
-          borderStrokeWidth={1}
           centeredScaling={false}
           keepRatio={false}
           enabledAnchors={[

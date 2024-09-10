@@ -8,26 +8,28 @@ import {
   SHOT_TOOLBAR_MODAL_HEIGHT,
   SHOT_TOOLBAR_SPLIT,
   SHOT_TOOLBAR_WIDTH
-} from './constants.ts';
-import { useMouseActon } from './hooks/useMouseActon.ts';
-import { useMousePreviewColor } from './hooks/useMousePreviewColor.ts';
-import { ShotMousePreviewRect } from './components/ShotMousePreviewRect.tsx';
-import { ShotSizeContainer } from './components/ShotSizeContainer.tsx';
-import { ShotToolsContainer } from './components/ShotToolsContainer.tsx';
-import { Shape } from './components/shape';
+} from './constants';
+import { useMouseActon } from './hooks/useMouseActon';
+import { useMousePreviewColor } from './hooks/useMousePreviewColor';
+import { ShotMousePreviewRect } from './components/ShotMousePreviewRect';
+import { ShotSizeContainer } from './components/ShotSizeContainer';
+import { ShotToolsContainer } from './components/ShotToolsContainer';
+import { Shapes } from './components/shapes';
 
 export interface ScreenShotProps {
   image: string;
   width: number;
   height: number;
   primaryColor?: string;
+  options?: IToolOptionsType;
 }
 
 const ScreenShot: FC<ScreenShotProps> = ({
   image,
   width,
   height,
-  primaryColor = '#4096ff'
+  primaryColor = '#4096ff',
+  options
 }) => {
   const source = useRef(new window.Image());
   const [ready, setReady] = useState(false);
@@ -40,7 +42,7 @@ const ScreenShot: FC<ScreenShotProps> = ({
   const [showShadow, setShowShadow] = useState(false);
 
   // 当前操作
-  const [currentAction, setCurrentAction] = useState<string>();
+  const [action, setAction] = useState<ISelectToolOptionType>();
 
   const shotRef = useRef<Konva.Rect>(null);
   const shotTrRef = useRef<Konva.Transformer>(null);
@@ -49,13 +51,13 @@ const ScreenShot: FC<ScreenShotProps> = ({
     useMousePreviewColor();
   const {
     shotRect,
-    figures,
+    shapes,
     updateShotRect,
     onActionMouseDownHandler,
     onActionMouseMoveHandler,
     onActionMouseUpHandler
   } = useMouseActon({
-    action: currentAction,
+    action: action,
     onMouseMoveCallback: (e) => {
       if (!shotRect) {
         const stage = e.target?.getStage();
@@ -214,7 +216,6 @@ const ScreenShot: FC<ScreenShotProps> = ({
     source.current.onload = () => {
       setReady(true);
     };
-    document.body.style.cursor = 'crosshair';
   }, []);
 
   return (
@@ -236,7 +237,14 @@ const ScreenShot: FC<ScreenShotProps> = ({
       }}
     >
       <div id='screenshot' style={{ position: 'relative' }}>
-        <Stage width={width} height={height}>
+        <Stage
+          width={width}
+          height={height}
+          onMouseDown={onActionMouseDownHandler}
+          onMouseMove={onActionMouseMoveHandler}
+          onMouseUp={onActionMouseUpHandler}
+          onContextMenu={() => {}}
+        >
           <Layer>
             {ready && (
               <Image
@@ -247,13 +255,7 @@ const ScreenShot: FC<ScreenShotProps> = ({
               />
             )}
           </Layer>
-          <Layer
-            draggable={false}
-            onMouseDown={onActionMouseDownHandler}
-            onMouseMove={onActionMouseMoveHandler}
-            onMouseUp={onActionMouseUpHandler}
-            onContextMenu={() => {}}
-          >
+          <Layer>
             <Rect
               x={0}
               y={0}
@@ -270,23 +272,23 @@ const ScreenShot: FC<ScreenShotProps> = ({
                   x={shotRect.x}
                   y={shotRect.y}
                   fill='rgba(0,0,0,0.91)'
-                  draggable={!currentAction}
+                  draggable={!action}
                   cornerRadius={shotRadius}
                   shadowColor='#000'
                   shadowEnabled={showShadow}
                   onMouseEnter={() => {
-                    if (!currentAction && !figures?.length) {
+                    if (!action && !shapes?.length) {
                       document.body.style.cursor = 'grab';
                     }
-                    if (currentAction) {
+                    if (action) {
                       document.body.style.cursor = 'crosshair';
                     }
                   }}
                   onMouseLeave={() => {
-                    if (!currentAction && !figures?.length) {
+                    if (!action && !shapes?.length) {
                       document.body.style.cursor = 'default';
                     }
-                    if (!currentAction && shotRect) {
+                    if (!action && shotRect) {
                       document.body.style.cursor = 'default';
                     }
                   }}
@@ -326,7 +328,6 @@ const ScreenShot: FC<ScreenShotProps> = ({
                 />
               </Fragment>
             ) : null}
-            <Shape list={figures || []} />
             {previewImage && color && pos && !shotRect ? (
               <ShotMousePreviewRect
                 pos={pos}
@@ -335,6 +336,7 @@ const ScreenShot: FC<ScreenShotProps> = ({
                 primaryColor={primaryColor}
               />
             ) : null}
+            <Shapes list={shapes} />
           </Layer>
         </Stage>
         {!isDragMove && shotRect ? (
@@ -363,7 +365,8 @@ const ScreenShot: FC<ScreenShotProps> = ({
             x={toolsRect.x}
             y={toolsRect.y}
             position={toolsRect.position}
-            onAction={setCurrentAction}
+            options={options}
+            onAction={setAction}
           />
         ) : null}
       </div>

@@ -1,22 +1,26 @@
-import { FC, memo } from 'react';
+import { FC, memo, useState } from 'react';
 import { Checkbox, ColorPicker, Flex, Slider, Typography } from 'antd';
 import { rectDefaultOptions, ToolColorList } from '../../config';
 import { useControllableValue } from 'ahooks';
-import { IOptionsType } from '../../types';
+import { SuccessIcon } from '../../icon';
+import { useStyles } from './styles';
 
 export interface IRectOptions {
-  options?: IOptionsType;
-  defaultOptions?: IOptionsType;
-  onUpdateOptions: (options: IOptionsType) => void;
+  options?: IShapeOption;
+  defaultOptions?: IShapeOption;
+  onUpdateOptions: (options: IShapeOption) => void;
 }
 
-export const RectOptions: FC<IRectOptions> = memo((props) => {
+export const OptionRect: FC<IRectOptions> = memo((props) => {
+  const { styles, cx } = useStyles();
   const [state, updateState] = useControllableValue(props, {
     defaultValue: rectDefaultOptions,
     defaultValuePropName: 'defaultOptions',
     valuePropName: 'options',
     trigger: 'onUpdateOptions'
   });
+
+  const [hasCustomColor, setHasCustomColor] = useState(false);
 
   return (
     <Flex gap={12}>
@@ -43,7 +47,7 @@ export const RectOptions: FC<IRectOptions> = memo((props) => {
             min={0}
             max={100}
             defaultValue={1}
-            value={state.opacity * 100}
+            value={(state.opacity || 1) * 100}
             onChange={(value) => {
               updateState({
                 ...state,
@@ -58,14 +62,21 @@ export const RectOptions: FC<IRectOptions> = memo((props) => {
         {ToolColorList.map((val) => (
           <a
             key={val}
-            className='color-item'
+            className={cx(styles.item)}
             style={{ backgroundColor: val }}
-          />
+            onClick={() => {
+              setHasCustomColor(false);
+              updateState({ ...state, color: val });
+            }}
+          >
+            {state.color === val && <SuccessIcon width={14} height={14} />}
+          </a>
         ))}
         <ColorPicker
           value={state.color}
           disabledAlpha
           onChange={(value) => {
+            setHasCustomColor(true);
             updateState({
               ...state,
               color: `#${value.toHex()}`
@@ -75,7 +86,9 @@ export const RectOptions: FC<IRectOptions> = memo((props) => {
           <a
             className='color-item'
             style={{ backgroundColor: state.color }}
-          ></a>
+          >
+            {hasCustomColor && <SuccessIcon width={14} height={14} />}
+          </a>
         </ColorPicker>
       </Flex>
       <Flex vertical>

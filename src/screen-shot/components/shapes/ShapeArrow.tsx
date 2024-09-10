@@ -3,11 +3,10 @@ import { Arrow, Transformer } from 'react-konva';
 import Konva from 'konva';
 
 export interface IShapeArrowProps {
-  shapeProps: Konva.ArrowConfig;
+  shape: IShapeType
 }
 
-export const ShapeArrow: FC<IShapeArrowProps> = ({ shapeProps }) => {
-  console.log(shapeProps);
+export const ShapeArrow: FC<IShapeArrowProps> = ({ shape }) => {
   const arrowRef = useRef<Konva.Arrow>(null);
   const shotTrRef = useRef<Konva.Transformer>(null);
 
@@ -27,12 +26,12 @@ export const ShapeArrow: FC<IShapeArrowProps> = ({ shapeProps }) => {
     <Fragment>
       <Arrow
         ref={arrowRef}
-        stroke={'red'}
-        strokeWidth={2}
-        pointerWidth={20}
-        pointerLength={20}
-        fill='red'
-        {...shapeProps}
+        pointerWidth={shape.options?.size}
+        pointerLength={(shape.options?.size || 0) * 2}
+        fill={shape.options?.full ? shape.options?.color : 'transparent'}
+        opacity={shape.options?.opacity}
+        cornerRadius={shape.options?.radius ? 5 : 0}
+        points={[shape.x || 0, shape.y || 0, shape.endX || 0, shape.endY || 0]}
         onClick={onArronTap}
         onTap={onArronTap}
         draggable

@@ -1,5 +1,3 @@
-import './ScreenShot.less'
-
-import ScreenShot from './ScreenShot.tsx';
+import ScreenShot from './ScreenShot';
 
 export { ScreenShot };
