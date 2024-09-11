@@ -1,3 +1,10 @@
+interface IShotRect {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
 interface IShapeOption {
   size?: number;
   opacity?: number;

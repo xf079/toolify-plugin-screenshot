@@ -10,7 +10,7 @@ export interface IActionHandleOptions {
   onMouseUpCallback?: (e: Konva.KonvaEventObject<MouseEvent>) => void;
 }
 
-export const useMouseActon = (options: IActionHandleOptions) => {
+export const useMouseShapeHandler = (options: IActionHandleOptions) => {
   // 是否开始绘制截图区域
   const isDrawing = useRef(false);
   // 开始绘制的位置
@@ -31,7 +31,7 @@ export const useMouseActon = (options: IActionHandleOptions) => {
 
   const onActionMouseDownHandler = useMemoizedFn(
     (e: Konva.KonvaEventObject<MouseEvent>) => {
-      if (e.evt.which === 1) {
+      if (e.evt.button === 0) {
         options?.onMouseDownCallback?.(e);
         if (!shotRect) {
           isDrawing.current = true;

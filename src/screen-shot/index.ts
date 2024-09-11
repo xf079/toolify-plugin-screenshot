@@ -1,3 +1,3 @@
-import ScreenShot from './ScreenShot';
+import ScreenShot from './ScreenShotContainer';
 
 export { ScreenShot };
