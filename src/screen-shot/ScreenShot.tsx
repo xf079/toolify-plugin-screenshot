@@ -43,7 +43,7 @@ const ScreenShot: FC<ScreenShotProps> = ({
   const source = useRef(new window.Image());
   const [ready, setReady] = useState(false);
 
-  const { state } = useContext(ShotContext);
+  const { state, dispatch } = useContext(ShotContext);
 
   // 是否正在拖动截图区域
   const [isDragMove, setIsDragMove] = useState(false);
@@ -52,9 +52,6 @@ const ScreenShot: FC<ScreenShotProps> = ({
   const [shotRadius, setShotRadius] = useState(10);
   // 是否显示阴影
   const [showShadow, setShowShadow] = useState(false);
-
-  // 当前操作
-  const [action, setAction] = useState<ISelectToolOptionType>();
 
   const shotRef = useRef<Konva.Rect>(null);
   const shotTrRef = useRef<Konva.Transformer>(null);
@@ -68,23 +65,11 @@ const ScreenShot: FC<ScreenShotProps> = ({
     onShotMouseOutHandler
   } = useMouseShotHandler();
   const {
-    shotRect,
     shapes,
-    updateShotRect,
-    onActionMouseDownHandler,
-    onActionMouseMoveHandler,
-    onActionMouseUpHandler
-  } = useMouseShapeHandler({
-    action: action,
-    onMouseMoveCallback: (e) => {
-      if (!shotRect) {
-        const stage = e.target?.getStage();
-        if (stage) {
-          onMouseMoveHandle(stage);
-        }
-      }
-    }
-  });
+    onShapeMouseDownHandler,
+    onShapeMouseMoveHandler,
+    onShapeMouseUpHandler
+  } = useMouseShapeHandler();
 
   const sizeRect = useMemo(() => {
     if (!state.shot) return { x: 0, y: 0 };
@@ -136,11 +121,15 @@ const ScreenShot: FC<ScreenShotProps> = ({
     return { x, y, position };
   }, [height, state.shot]);
 
+  const onShotDragStart = () => {
+    setIsDragMove(true);
+  };
+
   /**
    * 截图区域的鼠标拖动移动事件
    * @param e 鼠标事件对象
    */
-  const onRectDragMove = useMemoizedFn(() => {
+  const onShotDragMove = useMemoizedFn(() => {
     if (!isDragMove) {
       setIsDragMove(true);
     }
@@ -150,12 +139,15 @@ const ScreenShot: FC<ScreenShotProps> = ({
    * 截图区域的鼠标拖动结束事件
    * @param e 鼠标事件对象
    */
-  const onRectDragEnd = useMemoizedFn(() => {
-    updateShotRect({
-      x: shotRef.current?.x(),
-      y: shotRef.current?.y(),
-      width: shotRef.current?.width(),
-      height: shotRef.current?.height()
+  const onShotDragEnd = useMemoizedFn(() => {
+    dispatch({
+      type: 'SET_SHOT',
+      payload: {
+        x: shotRef.current?.x(),
+        y: shotRef.current?.y(),
+        width: shotRef.current?.width(),
+        height: shotRef.current?.height()
+      }
     });
     if (isDragMove) {
       setIsDragMove(false);
@@ -165,11 +157,11 @@ const ScreenShot: FC<ScreenShotProps> = ({
   /**
    * 截图区域的拖动边界限制
    */
-  const onRectDragBoundFunc = useMemoizedFn((pos: Konva.Vector2d) => {
+  const onShotDragBoundFunc = useMemoizedFn((pos: Konva.Vector2d) => {
     let x = pos.x;
     let y = pos.y;
-    const shotW = shotRect?.width || 0;
-    const shotH = shotRect?.height || 0;
+    const shotW = state.shot?.width || 0;
+    const shotH = state.shot?.height || 0;
     const maxX = width - shotW;
     const maxY = height - shotH;
     if (x < 0) {
@@ -187,47 +179,57 @@ const ScreenShot: FC<ScreenShotProps> = ({
   });
 
   /**
-   *
+   * 截图区域变化更新区域数据
    */
-  const onRectTransformer = () => {
+  const onShotTransformer = () => {
     const target = shotRef.current;
     if (target) {
       const scaleX = Math.abs(target.scaleX());
       const scaleY = Math.abs(target.scaleY());
       target.scaleX(1);
       target.scaleY(1);
-      updateShotRect({
-        x: target.x(),
-        y: target.y(),
-        width: Math.max(5, target.width() * scaleX),
-        height: Math.max(5, target.height() * scaleY)
+      dispatch({
+        type: 'SET_SHOT',
+        payload: {
+          x: target.x(),
+          y: target.y(),
+          width: Math.max(5, target.width() * scaleX),
+          height: Math.max(5, target.height() * scaleY)
+        }
       });
     }
   };
 
-  const onRectTransformEnd = () => {
+  /**
+   * 截图区域变换结束更新区域数据
+   */
+  const onShotTransformEnd = () => {
     const target = shotRef.current;
     if (target) {
       const scaleX = Math.abs(target.scaleX());
       const scaleY = Math.abs(target.scaleY());
       target.scaleX(1);
       target.scaleY(1);
-      updateShotRect({
-        x: target.x(),
-        y: target.y(),
-        width: Math.max(5, target.width() * scaleX),
-        height: Math.max(5, target.height() * scaleY)
+
+      dispatch({
+        type: 'SET_SHOT',
+        payload: {
+          x: target.x(),
+          y: target.y(),
+          width: Math.max(5, target.width() * scaleX),
+          height: Math.max(5, target.height() * scaleY)
+        }
       });
     }
     setIsDragMove(false);
   };
 
   useEffect(() => {
-    if (shotRect && shotRef.current && shotTrRef.current) {
+    if (state.shot && shotRef.current && shotTrRef.current) {
       shotTrRef.current?.nodes([shotRef.current]);
       shotTrRef.current?.getLayer()?.batchDraw();
     }
-  }, [shotRect]);
+  }, [state.shot]);
 
   useEffect(() => {
     source.current.src = image;
@@ -241,14 +243,13 @@ const ScreenShot: FC<ScreenShotProps> = ({
       <Stage
         width={width}
         height={height}
-        onMouseDown={onActionMouseDownHandler}
-        onMouseMove={onActionMouseMoveHandler}
-        onMouseUp={(e: Konva.KonvaEventObject<MouseEvent>) => {
+        onMouseUp={() => {
+          console.log('out');
           if (state.mode === 'shot') {
             onShotMouseOutHandler();
           }
-          if(state.mode === 'shape') {
-            console.log('22');
+          if (state.mode === 'shape') {
+            onShapeMouseUpHandler();
           }
         }}
         onContextMenu={() => {}}
@@ -282,19 +283,19 @@ const ScreenShot: FC<ScreenShotProps> = ({
                 x={state.shot.x}
                 y={state.shot.y}
                 fill='rgba(0,0,0,0.91)'
-                draggable={!action}
+                draggable={!state.action}
                 cornerRadius={shotRadius}
                 shadowColor='#000'
                 shadowEnabled={showShadow}
-                onDragMove={onRectDragMove}
-                onDragEnd={onRectDragEnd}
-                dragBoundFunc={onRectDragBoundFunc}
+                dragBoundFunc={onShotDragBoundFunc}
                 globalCompositeOperation='destination-out'
-                onTransformStart={() => {
-                  setIsDragMove(true);
-                }}
-                onTransform={onRectTransformer}
-                onTransformEnd={onRectTransformEnd}
+                onTransformStart={onShotDragStart}
+                onDragMove={onShotDragMove}
+                onDragEnd={onShotDragEnd}
+                onMouseDown={onShapeMouseDownHandler}
+                onMouseMove={onShapeMouseMoveHandler}
+                onTransform={onShotTransformer}
+                onTransformEnd={onShotTransformEnd}
               />
               <Transformer
                 ref={shotTrRef}
@@ -322,7 +323,7 @@ const ScreenShot: FC<ScreenShotProps> = ({
               />
             </Fragment>
           ) : null}
-          {previewImage && color && pos && !shotRect ? (
+          {previewImage && color && pos && !state.shot ? (
             <ShotMousePreviewRect
               pos={pos}
               color={color}
@@ -333,34 +334,46 @@ const ScreenShot: FC<ScreenShotProps> = ({
           <Shapes list={shapes} />
         </Layer>
       </Stage>
-      {!isDragMove && shotRect ? (
+      {!isDragMove && state.shot ? (
         <ShotSizeContainer
           windowWidth={width}
           windowHeight={height}
-          width={shotRect.width || 0}
-          height={shotRect.height || 0}
+          width={state.shot.width || 0}
+          height={state.shot.height || 0}
           x={sizeRect.x}
           y={sizeRect.y}
           radius={shotRadius}
           shadow={showShadow}
           onRectChange={(_w, _h) => {
-            updateShotRect({
-              ...shotRect,
-              width: _w,
-              height: _h
+            dispatch({
+              type: 'SET_SHOT',
+              payload: {
+                ...state.shot,
+                width: _w,
+                height: _h
+              }
             });
           }}
           onRadiusChange={setShotRadius}
           onShadowChange={setShowShadow}
         />
       ) : null}
-      {!isDragMove && shotRect ? (
+      {!isDragMove && state.shot ? (
         <ShotToolsContainer
           x={toolsRect.x}
           y={toolsRect.y}
           position={toolsRect.position}
           options={options}
-          onAction={setAction}
+          onAction={(action) => {
+            dispatch({
+              type: 'SET_MODE',
+              payload: 'shape'
+            });
+            dispatch({
+              type: 'UPDATE_ACTION',
+              payload: action
+            });
+          }}
         />
       ) : null}
     </div>
